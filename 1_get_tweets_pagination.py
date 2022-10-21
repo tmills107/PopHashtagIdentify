@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 import tweepy
+from utils import retry_query
 import os
 
 UNIQUE_USER_IDS = True
@@ -39,21 +40,27 @@ assert bearer_token != None, "Remember to set API credentials as environment var
 
 QUERY = HASHTAG + ' -is:retweet -is:quote'
 
-client = tweepy.Client(wait_on_rate_limit = True, 
-                    bearer_token = bearer_token)
+@retry_query
+def make_query_1():
+    tweets = []
+    client = tweepy.Client(wait_on_rate_limit = True, 
+                        bearer_token = bearer_token)
 
-tweets = []
+    my_paginator = tweepy.Paginator(client.search_recent_tweets, 
+        query=QUERY,
+        tweet_fields=['created_at', 'entities', 'public_metrics'],
+        media_fields=['url'],
+        user_fields=['description'],
+        expansions=['attachments.media_keys', 'author_id'],
+        max_results = max_results).flatten(limit=limit)
+
+    for tweet in my_paginator:
+        tweets.append(tweet)
+    return tweets
+
+tweets = make_query_1()
+
 tweets_df = []
-
-for tweet in tweepy.Paginator(client.search_recent_tweets, 
-                    query=QUERY,
-                    tweet_fields=['created_at', 'entities', 'public_metrics'],
-                    media_fields=['url'],
-                    user_fields=['description'],
-                    expansions=['attachments.media_keys', 'author_id'],
-                    max_results = max_results).flatten(limit=limit):
-    tweets.append(tweet)
-
 # Go through each tweet from each user and oragnize the data into coloumns for export. 
 for item in tweets: #removed ['data']
     if "entities" not in item:

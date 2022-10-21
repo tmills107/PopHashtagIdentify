@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 import tweepy
+from utils import retry_query
 import os
 
 UNIQUE_USER_IDS = True
@@ -42,8 +43,13 @@ bearer_token = os.environ.get('BEARER_TOKEN')
 assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
 # Create .Client() object that will let us access the full archive.
-client = tweepy.Client(wait_on_rate_limit = True, bearer_token = bearer_token,
-                       return_type=dict)
+
+@retry_query
+def make_client():
+  client = tweepy.Client(wait_on_rate_limit = True, bearer_token = bearer_token, return_type=dict)
+  return client
+
+client = make_client()
 
 # Read tweets.csv for IDs and convert it into a list of IDs
 ids = pd.read_csv(file_name_prefix + 'tweets.csv', usecols=['author_id'], index_col=False)
@@ -57,13 +63,17 @@ tweets_df = []
 
 for curr_user in id_list:
   # For each user, you retrieve the most recent 10 tweets that they posted.
-  usertweets = client.get_users_tweets(id = curr_user,
-                                      exclude=['retweets','replies'],
-                                      tweet_fields=['created_at','entities','public_metrics',],                                      
-                                      media_fields=['url'],
-                                      user_fields=['description'],
-                                      expansions=['attachments.media_keys','author_id'],
-                                      max_results = max_results) 
+  @retry_query
+  def query_user_tweets():
+    usertweets = client.get_users_tweets(id = curr_user,
+      exclude=['retweets','replies'],
+      tweet_fields=['created_at','entities','public_metrics',],                                      
+      media_fields=['url'],
+      user_fields=['description'],
+      expansions=['attachments.media_keys','author_id'],
+      max_results = max_results) 
+    return usertweets
+  usertweets = query_user_tweets()
 
   # Potentially some users accounts will either be deleted or suspended so this bypasses those users/tweets with no data. 
   if "data" not in usertweets:

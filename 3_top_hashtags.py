@@ -4,6 +4,8 @@ import os
 import pandas as pd
 from datetime import datetime
 
+from utils import retry_query
+
 UNIQUE_USER_HASHTAGS_COUNT = True
 HASHTAG_COUNT_LIMIT = 15
 
@@ -43,8 +45,12 @@ bearer_token = os.environ.get('BEARER_TOKEN')
 assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
 # Create .Client() object that will let us access the full archive.
-client = tweepy.Client(bearer_token = bearer_token,
-                       return_type=dict)
+@retry_query
+def make_client():
+  client = tweepy.Client(bearer_token = bearer_token,
+    return_type=dict)
+  return client
+client = make_client()
 
 # Opens the csv file created in the last script of the identified user tweets. 
 hashtags_df = pd.read_csv(file_name_prefix + 'identified_user_tweets.csv', index_col=False)
@@ -75,8 +81,12 @@ final_hashtagcount = []
 
 # Queries Twitter to find the count of the tweets for each of the 5 hashtags identified over the past 7 days. 
 for hashtag, c in counts:
-  hashtagcount = client.get_recent_tweets_count(query=hashtag,
-                                                granularity = 'day')
+  @retry_query
+  def query_hashtag_counts():
+    hashtagcount = client.get_recent_tweets_count(query=hashtag,
+      granularity = 'day')
+    return hashtagcount
+  hashtagcount = query_hashtag_counts()
   total_tweet_count = hashtagcount['meta']['total_tweet_count']
   final_hashtagcount.append((hashtag, total_tweet_count))
 

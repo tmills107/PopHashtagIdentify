@@ -3,6 +3,8 @@ import os
 import pandas as pd
 import tweepy
 
+from utils import retry_query
+
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 
 if DEBUG:
@@ -37,7 +39,7 @@ else:
     
     top_num_hashtags = list(df.itertuples(index=False, name=None))
 
-    _, HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[2], reverse=True)[0]
+    HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[1], reverse=True)[0]
 
 if DEBUG:
     output_file_name_prefix = f"./data/debug_{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
@@ -51,21 +53,31 @@ STARTDATE    = ENDDATE - timedelta(days=6)
 
 bearer_token = os.environ.get('BEARER_TOKEN')
 
-client = tweepy.Client(wait_on_rate_limit = True, 
+@retry_query
+def make_client():
+    client = tweepy.Client(wait_on_rate_limit = True, 
                     bearer_token = bearer_token)
+    return client
+client = make_client()
 
-tweets = []
+@retry_query
+def query_tweets():
+    tweets = []
 
-for tweet in tweepy.Paginator(client.search_recent_tweets, 
-                    query=QUERY,
-                    tweet_fields=['created_at', 'entities', 'public_metrics'],
-                    media_fields=['url'],
-                    user_fields=['description'],
-                    expansions=['attachments.media_keys', 'author_id'],
-                    start_time = STARTDATE,
-                    end_time = ENDDATE,
-                    max_results = max_results).flatten(limit=limit):
-    tweets.append(tweet)
+    my_paginator = tweepy.Paginator(client.search_recent_tweets, 
+        query=QUERY,
+        tweet_fields=['created_at', 'entities', 'public_metrics'],
+        media_fields=['url'],
+        user_fields=['description'],
+        expansions=['attachments.media_keys', 'author_id'],
+        start_time = STARTDATE,
+        end_time = ENDDATE,
+        max_results = max_results).flatten(limit=limit)
+
+    for tweet in my_paginator:
+        tweets.append(tweet)
+    return tweets
+tweets = query_tweets()
 
 tweet_data_list = []
 
