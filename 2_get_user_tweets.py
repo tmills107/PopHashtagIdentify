@@ -5,6 +5,14 @@ import os
 
 UNIQUE_USER_IDS = True
 
+DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
+
+if DEBUG:
+    max_results = 2
+else:
+    max_results = 10
+
+
 if False:
     HASHTAG      = '#blacktwitter'
     now = datetime.now()
@@ -20,7 +28,10 @@ else:
     date_string = parser.parse_args().timestamp
     HOUR = parser.parse_args().hour
 
-file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+if DEBUG:
+  file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
+else:
+  file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
 
 
 # Get authentication information from the shell environment.
@@ -52,7 +63,7 @@ for curr_user in id_list:
                                       media_fields=['url'],
                                       user_fields=['description'],
                                       expansions=['attachments.media_keys','author_id'],
-                                      max_results = 10) 
+                                      max_results = max_results) 
 
   # Potentially some users accounts will either be deleted or suspended so this bypasses those users/tweets with no data. 
   if "data" not in usertweets:

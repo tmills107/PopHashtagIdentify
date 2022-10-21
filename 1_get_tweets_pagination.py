@@ -5,6 +5,15 @@ import os
 
 UNIQUE_USER_IDS = True
 
+DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
+
+if DEBUG:
+    max_results = 1
+    limit = 5
+else:
+    max_results = 100
+    limit = 500
+
 if False:
     HASHTAG = '#blacktwitter'
     now = datetime.now()
@@ -20,7 +29,10 @@ else:
     date_string = parser.parse_args().timestamp
     HOUR = parser.parse_args().hour
 
-file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+if DEBUG:
+    file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
+else:
+    file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
 
 bearer_token = os.environ.get('BEARER_TOKEN')
 assert bearer_token != None, "Remember to set API credentials as environment variables first!"
@@ -39,7 +51,7 @@ for tweet in tweepy.Paginator(client.search_recent_tweets,
                     media_fields=['url'],
                     user_fields=['description'],
                     expansions=['attachments.media_keys', 'author_id'],
-                    max_results = 100).flatten(limit=500):
+                    max_results = max_results).flatten(limit=limit):
     tweets.append(tweet)
 
 # Go through each tweet from each user and oragnize the data into coloumns for export. 

@@ -24,11 +24,17 @@ year = int(now.strftime("%Y"))
 month = int(now.strftime("%m"))
 day = int(now.strftime("%d"))
 
+DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
+if DEBUG:
+    print("Running script in DEBUG mode")
+else:
+    print("Running script in FULL mode")
 
 #################################################################
 HASHTAG_LIST = ["#blacktwitter"]
 METHOD = "b"
 TOP_NUMBER = 20
+#hours_to_check = [1,2] # 23 means 10pm will run
 hours_to_check = list(range(8, 23)) # 23 means 10pm will run
 #hours_to_check = [12+8]
 #################################################################
@@ -36,7 +42,8 @@ hours_to_check = list(range(8, 23)) # 23 means 10pm will run
 print(f"Starting run with method {METHOD}, will check at hours={hours_to_check}")
 
 for h in hours_to_check:
-    pause.until(datetime(year, month, day, h))
+    if not DEBUG:
+        pause.until(datetime(year, month, day, h))
     for HASHTAG in HASHTAG_LIST:
         print(f"Running at h={h} with {HASHTAG}")
         main(HASHTAG, DATE_STRING, h, top_number=TOP_NUMBER, method=METHOD)

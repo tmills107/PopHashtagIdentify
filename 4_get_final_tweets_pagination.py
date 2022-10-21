@@ -3,6 +3,15 @@ import os
 import pandas as pd
 import tweepy
 
+DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
+
+if DEBUG:
+    max_results = 1
+    limit = 10
+else:
+    max_results = 100
+    limit = 1000
+
 if False:
     INITIAL_HASHTAG = '#blacktwitter'
     HASHTAG      = '#blm'
@@ -18,7 +27,11 @@ else:
     HOUR = parser.parse_args().hour
 
     INITIAL_HASHTAG = parser.parse_args().hashtag
-    file_name_prefix = f"./data/{INITIAL_HASHTAG}_{date_string}_{HOUR}_"
+
+    if DEBUG:
+        file_name_prefix = f"./data/debug_{INITIAL_HASHTAG}_{date_string}_{HOUR}_"
+    else:
+        file_name_prefix = f"./data/{INITIAL_HASHTAG}_{date_string}_{HOUR}_"
 
     df = pd.read_csv(file_name_prefix + 'all_twitter_hashtag_count_top.csv')
     
@@ -26,7 +39,10 @@ else:
 
     _, HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[2], reverse=True)[0]
 
-output_file_name_prefix = f"./data/{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
+if DEBUG:
+    output_file_name_prefix = f"./data/debug_{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
+else:
+    output_file_name_prefix = f"./data/{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
 
 QUERY        = HASHTAG + ' -is:retweet -is:quote'
 
@@ -48,7 +64,7 @@ for tweet in tweepy.Paginator(client.search_recent_tweets,
                     expansions=['attachments.media_keys', 'author_id'],
                     start_time = STARTDATE,
                     end_time = ENDDATE,
-                    max_results = 100).flatten(limit=1000):
+                    max_results = max_results).flatten(limit=limit):
     tweets.append(tweet)
 
 tweet_data_list = []

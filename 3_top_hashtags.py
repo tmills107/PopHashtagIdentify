@@ -25,7 +25,16 @@ else:
     HOUR = parser.parse_args().hour
     top_number = parser.parse_args().top_number
 
-file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
+
+if DEBUG:
+  top_number = 1
+
+if DEBUG:
+  file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
+else:
+  file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+
 
 # Get authentication information from the shell environment.
 bearer_token = os.environ.get('BEARER_TOKEN')
@@ -57,7 +66,10 @@ for author_id, group in hashtags_df.groupby("author_id"):
   hashtags_list.extend(_hash_list)
 
 # Finds the most common used hashtags (case sensitive) from the list.
-counts = collections.Counter(hashtags_list).most_common(top_number)
+counts = dict(collections.Counter(hashtags_list).most_common(top_number))
+
+if len(counts) == 0:
+  raise ValueError("No hashtags found")
 
 final_hashtagcount = []
 
