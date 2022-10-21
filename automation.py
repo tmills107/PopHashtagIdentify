@@ -31,11 +31,11 @@ else:
     print("Running script in FULL mode")
 
 #################################################################
-HASHTAG_LIST = ["#blacktwitter"]
+HASHTAG_LIST = ["blacktwitter"]
 METHOD = "b"
 TOP_NUMBER = 20
-#hours_to_check = [1,2] # 23 means 10pm will run
-hours_to_check = list(range(8, 23)) # 23 means 10pm will run
+hours_to_check = [1,2] # 23 means 10pm will run
+#hours_to_check = list(range(8, 23)) # 23 means 10pm will run
 #hours_to_check = [12+8]
 #################################################################
 

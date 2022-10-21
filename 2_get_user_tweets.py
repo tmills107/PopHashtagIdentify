@@ -8,7 +8,7 @@ UNIQUE_USER_IDS = True
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 
 if DEBUG:
-    max_results = 2
+    max_results = 10
 else:
     max_results = 10
 
@@ -24,7 +24,7 @@ else:
     parser.add_argument("hashtag", type=str)
     parser.add_argument("timestamp", type=str)
     parser.add_argument("hour", type=str)
-    HASHTAG = parser.parse_args().hashtag
+    HASHTAG = "#" + parser.parse_args().hashtag
     date_string = parser.parse_args().timestamp
     HOUR = parser.parse_args().hour
 

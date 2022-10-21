@@ -20,7 +20,7 @@ else:
     parser.add_argument("timestamp", type=str)
     parser.add_argument("hour", type=str)
     parser.add_argument("top_number", type=int)
-    HASHTAG = parser.parse_args().hashtag
+    HASHTAG = "#" + parser.parse_args().hashtag
     date_string = parser.parse_args().timestamp
     HOUR = parser.parse_args().hour
     top_number = parser.parse_args().top_number
@@ -66,7 +66,7 @@ for author_id, group in hashtags_df.groupby("author_id"):
   hashtags_list.extend(_hash_list)
 
 # Finds the most common used hashtags (case sensitive) from the list.
-counts = dict(collections.Counter(hashtags_list).most_common(top_number))
+counts = collections.Counter(hashtags_list).most_common(top_number)
 
 if len(counts) == 0:
   raise ValueError("No hashtags found")

@@ -6,7 +6,7 @@ import tweepy
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 
 if DEBUG:
-    max_results = 1
+    max_results = 10
     limit = 10
 else:
     max_results = 100
@@ -26,7 +26,7 @@ else:
     date_string = parser.parse_args().timestamp
     HOUR = parser.parse_args().hour
 
-    INITIAL_HASHTAG = parser.parse_args().hashtag
+    INITIAL_HASHTAG = "#" + parser.parse_args().hashtag
 
     if DEBUG:
         file_name_prefix = f"./data/debug_{INITIAL_HASHTAG}_{date_string}_{HOUR}_"
@@ -44,7 +44,7 @@ if DEBUG:
 else:
     output_file_name_prefix = f"./data/{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
 
-QUERY        = HASHTAG + ' -is:retweet -is:quote'
+QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote'
 
 ENDDATE      = datetime.now()
 STARTDATE    = ENDDATE - timedelta(days=6)
