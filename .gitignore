@@ -1,0 +1,5 @@
+.env
+*.csv
+.DS_Store
+*.swp
+*.xlsx
