@@ -83,7 +83,7 @@ final_hashtagcount = []
 for hashtag, c in counts:
   @retry_query
   def query_hashtag_counts():
-    hashtagcount = client.get_recent_tweets_count(query=hashtag,
+    hashtagcount = client.get_recent_tweets_count(query= "#" + hashtag,
       granularity = 'day')
     return hashtagcount
   hashtagcount = query_hashtag_counts()
