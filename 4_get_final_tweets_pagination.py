@@ -12,7 +12,7 @@ if DEBUG:
     limit = 10
 else:
     max_results = 100
-    limit = 1000
+    limit = 5000
 
 if False:
     INITIAL_HASHTAG = '#blacktwitter'
@@ -41,12 +41,14 @@ else:
 
     HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[1], reverse=True)[0]
 
-if DEBUG:
-    output_file_name_prefix = f"./data/debug_{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
-else:
-    output_file_name_prefix = f"./data/{INITIAL_HASHTAG}_{HASHTAG}_{date_string}_"
+HASHTAG = "kanyewest"
 
-QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote'
+if DEBUG:
+    output_file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_"
+else:
+    output_file_name_prefix = f"./data/{HASHTAG}_{date_string}_"
+
+QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote lang:en'
 
 ENDDATE      = datetime.now()
 STARTDATE    = ENDDATE - timedelta(days=6)

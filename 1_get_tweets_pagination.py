@@ -10,7 +10,7 @@ DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 
 if DEBUG:
     max_results = 10
-    limit = 5
+    limit = 10
 else:
     max_results = 100
     limit = 500
@@ -38,7 +38,7 @@ else:
 bearer_token = os.environ.get('BEARER_TOKEN')
 assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
-QUERY = HASHTAG + ' -is:retweet -is:quote'
+QUERY = HASHTAG + ' -is:retweet -is:quote lang:en' 
 
 @retry_query
 def make_query_1():
