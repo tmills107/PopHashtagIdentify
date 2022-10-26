@@ -41,8 +41,6 @@ else:
 
     HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[1], reverse=True)[0]
 
-HASHTAG = "kanyewest"
-
 if DEBUG:
     output_file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_"
 else:
@@ -51,7 +49,7 @@ else:
 QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote lang:en'
 
 ENDDATE      = datetime.now()
-STARTDATE    = ENDDATE - timedelta(days=6)
+# STARTDATE    = ENDDATE - timedelta(days=6)
 
 bearer_token = os.environ.get('BEARER_TOKEN')
 
@@ -72,7 +70,7 @@ def query_tweets():
         media_fields=['url'],
         user_fields=['description'],
         expansions=['attachments.media_keys', 'author_id'],
-        start_time = STARTDATE,
+        #start_time = STARTDATE,
         end_time = ENDDATE,
         max_results = max_results).flatten(limit=limit)
 
