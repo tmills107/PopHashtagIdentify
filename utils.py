@@ -230,6 +230,7 @@ def top_hashtags(hashtag:str, timestamp:str, hour:str, top_number:int, write_to_
   HOUR = hour
   top_number = top_number
 
+  in_year, in_month, in_day, in_hour, in_minute = timestamp.split("_")
   if DEBUG:
     top_number = 1
 
@@ -284,8 +285,12 @@ def top_hashtags(hashtag:str, timestamp:str, hour:str, top_number:int, write_to_
   for hashtag, c in counts:
     @retry_query
     def query_hashtag_counts():
+      start_time=f"{in_year}-{in_month}-{in_day}T{int(in_hour)-1}:00:00-04:00",
+      end_time=f"{in_year}-{in_month}-{in_day}T{in_hour}:00:00-04:00"
       hashtagcount = client.get_recent_tweets_count(query= "#" + hashtag,
-        granularity = 'day')
+        granularity = 'hour',
+        start_time=start_time,
+        end_time=end_time)
       return hashtagcount
     hashtagcount = query_hashtag_counts()
     total_tweet_count = hashtagcount['meta']['total_tweet_count']
