@@ -317,13 +317,7 @@ def top_hashtags(hashtag:str, timestamp:str, hour:str, top_number:int, write_to_
 ########################################################
 ########################################################
 
-def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_file:bool = True):
-    if DEBUG:
-        max_results = 10
-        limit = 10
-    else:
-        max_results = 100
-        limit = 5000
+def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_file:bool = True, override_hashtag=None):
 
     date_string = timestamp
     HOUR = hour
@@ -339,17 +333,29 @@ def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_f
 
     top_num_hashtags = list(df.itertuples(index=False, name=None))
 
-    HASHTAG, counts = sorted(top_num_hashtags, key = lambda kv:kv[1], reverse=True)[0]
+    if override_hashtag != None:
+      HASHTAG = override_hashtag
+    else:
+      HASHTAG, _ = sorted(top_num_hashtags, key = lambda kv:kv[1], reverse=True)[0]
 
     if DEBUG:
         output_file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_"
     else:
         output_file_name_prefix = f"./data/{HASHTAG}_{date_string}_"
+    
+    ENDDATE = datetime.now()
+ 
+    get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
+
+def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file:bool=True):
+    if DEBUG:
+        max_results = 10
+        limit = 10
+    else:
+        max_results = 100
+        limit = 5000
 
     QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote lang:en'
-
-    ENDDATE      = datetime.now()
-    # STARTDATE    = ENDDATE - timedelta(days=6)
 
     bearer_token = os.environ.get('BEARER_TOKEN')
 
