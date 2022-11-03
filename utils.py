@@ -17,6 +17,9 @@ HASHTAG_COUNT_LIMIT = 15
 ########################################################
 ########################################################
 
+def make_timestring(d: datetime):
+  return d.strftime("%Y_%m_%d_%H_%M")
+
 def retry_query(func):
     def wrapper():
         current_retries = 0
@@ -26,8 +29,9 @@ def retry_query(func):
                 res = func()
                 retry_success = True
                 return res
-            except:
+            except Exception as e:
                 print("Failed, trying again")
+                print(e)
                 current_retries += 1
                 if DEBUG:
                     pause.seconds(API_RETRY_WAIT_MINS)
@@ -43,7 +47,7 @@ def retry_query(func):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, timestamp: str, hour: str, write_to_file:bool = True):
+def get_tweets_pagination(hashtag: str, timestamp: datetime, hour: str, write_to_file:bool = True):
 
     if DEBUG:
         max_results = 10
@@ -53,7 +57,7 @@ def get_tweets_pagination(hashtag: str, timestamp: str, hour: str, write_to_file
         limit = 500
 
     HASHTAG = "#" + hashtag
-    date_string = timestamp
+    date_string = make_timestring(timestamp)
     HOUR = hour
 
     if DEBUG:
@@ -125,14 +129,14 @@ def get_tweets_pagination(hashtag: str, timestamp: str, hour: str, write_to_file
 
 
 
-def get_user_tweets(hashtag:str, timestamp:str, hour:str, write_to_file:bool = True):
+def get_user_tweets(hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True):
   if DEBUG:
       max_results = 10
   else:
       max_results = 10
 
   HASHTAG = "#" + hashtag
-  date_string = timestamp
+  date_string = make_timestring(timestamp)
   HOUR = hour
 
   if DEBUG:
@@ -224,13 +228,13 @@ def get_user_tweets(hashtag:str, timestamp:str, hour:str, write_to_file:bool = T
 ########################################################
 ########################################################
 
-def top_hashtags(hashtag:str, timestamp:str, hour:str, top_number:int, write_to_file:bool = True):
+def top_hashtags(hashtag:str, timestamp:datetime, hour:str, top_number:int, write_to_file:bool = True):
   HASHTAG = "#" + hashtag
-  date_string = timestamp
+  date_string = make_timestring(timestamp)
   HOUR = hour
   top_number = top_number
 
-  in_year, in_month, in_day, in_hour, in_minute = timestamp.split("_")
+  in_year, in_month, in_day, in_hour, in_minute = date_string.split("_")
   if DEBUG:
     top_number = 1
 
@@ -317,9 +321,9 @@ def top_hashtags(hashtag:str, timestamp:str, hour:str, top_number:int, write_to_
 ########################################################
 ########################################################
 
-def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_file:bool = True, override_hashtag=None):
+def get_final_tweets_pagination(hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True, override_hashtag=None):
 
-    date_string = timestamp
+    date_string = make_timestring(timestamp)
     HOUR = hour
 
     INITIAL_HASHTAG = "#" + hashtag
@@ -343,7 +347,7 @@ def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_f
     else:
         output_file_name_prefix = f"./data/{HASHTAG}_{date_string}_"
     
-    ENDDATE = "2022-10-25T22:00:00-04:00" #datetime.now()
+    ENDDATE = datetime.now()
  
     get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
 

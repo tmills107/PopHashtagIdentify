@@ -11,7 +11,7 @@ from utils import (
 PYTHON_EXEC = "/usr/local/bin/python3"
 
 now = datetime.now()
-TIMESTAMP = now.strftime("%Y_%m_%d_%H_%M")
+TIMESTAMP = now
 
 def main(hashtag, timestamp, hour, top_number, method="b"):
     if method not in ["a", "b"]:
@@ -22,7 +22,7 @@ def main(hashtag, timestamp, hour, top_number, method="b"):
     top_hashtags(hashtag, timestamp, hour, top_number, write_to_file=True)
 
     if method == "a":
-        get_final_tweets_pagination(hashtag, timestamp, hour, write_to_file=True, override_hashtag="blacktwitter")
+        get_final_tweets_pagination(hashtag, timestamp, hour, write_to_file=True, override_hashtag=None)
 
 now = datetime.now()
 year = int(now.strftime("%Y"))
