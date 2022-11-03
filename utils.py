@@ -2,6 +2,7 @@ import os
 import pause
 import collections
 from datetime import datetime
+from datetime import timedelta
 import pandas as pd
 import tweepy
 
@@ -47,7 +48,7 @@ def retry_query(func):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, timestamp: datetime, write_to_file:bool = True):
+def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None):
 
     if DEBUG:
         max_results = 10
@@ -57,8 +58,8 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, write_to_file:bool 
         limit = 500
 
     HASHTAG = "#" + hashtag
-    date_string = make_timestring(timestamp)
-    HOUR = timestamp.hour
+    date_string = make_timestring(end_time)
+    HOUR = end_time.hour
 
     if DEBUG:
         file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
@@ -80,6 +81,8 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, write_to_file:bool 
             query=QUERY,
             tweet_fields=['created_at', 'entities', 'public_metrics'],
             media_fields=['url'],
+            start_time=start_time,
+            end_time=end_time,
             user_fields=['description'],
             expansions=['attachments.media_keys', 'author_id'],
             max_results = max_results).flatten(limit=limit)
@@ -129,15 +132,15 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, write_to_file:bool 
 
 
 
-def get_user_tweets(input_df, hashtag:str, timestamp:datetime, write_to_file:bool = True):
+def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool = True, start_time = None):
   if DEBUG:
       max_results = 10
   else:
       max_results = 10
 
   HASHTAG = "#" + hashtag
-  date_string = make_timestring(timestamp)
-  HOUR = timestamp.hour
+  date_string = make_timestring(end_time)
+  HOUR = end_time.hour
 
   if DEBUG:
     file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
@@ -177,6 +180,8 @@ def get_user_tweets(input_df, hashtag:str, timestamp:datetime, write_to_file:boo
         exclude=['retweets','replies'],
         tweet_fields=['created_at','entities','public_metrics',],                                      
         media_fields=['url'],
+        start_time=start_time,
+        end_time=end_time,
         user_fields=['description'],
         expansions=['attachments.media_keys','author_id'],
         max_results = max_results) 
@@ -226,10 +231,13 @@ def get_user_tweets(input_df, hashtag:str, timestamp:datetime, write_to_file:boo
 ########################################################
 ########################################################
 
-def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, top_number:int, write_to_file:bool = True):
+def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, write_to_file:bool = True, start_time = None):
+  if start_time == None:
+    start_time = end_time - timedelta(hours=1)
+
   HASHTAG = "#" + hashtag
-  date_string = make_timestring(timestamp)
-  HOUR = timestamp.hour
+  date_string = make_timestring(end_time)
+  HOUR = end_time.hour
   top_number = top_number
 
   in_year, in_month, in_day, in_hour, in_minute = date_string.split("_")
@@ -287,8 +295,6 @@ def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, top_number:int, w
   for hashtag, c in counts:
     @retry_query
     def query_hashtag_counts():
-      start_time=f"{in_year}-{in_month}-{in_day}T{int(in_hour)-1}:00:00-04:00",
-      end_time=f"{in_year}-{in_month}-{in_day}T{in_hour}:00:00-04:00"
       hashtagcount = client.get_recent_tweets_count(query= "#" + hashtag,
         granularity = 'hour',
         start_time=start_time,
@@ -319,10 +325,10 @@ def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, top_number:int, w
 ########################################################
 ########################################################
 
-def get_final_tweets_pagination(df_input, hashtag:str, timestamp:datetime, write_to_file:bool = True, override_hashtag=None):
+def get_final_tweets_pagination(df_input, hashtag:str, end_time:datetime, write_to_file:bool = True, override_hashtag=None, start_time=None):
 
-    date_string = make_timestring(timestamp)
-    HOUR = timestamp.hour
+    date_string = make_timestring(end_time)
+    HOUR = end_time.hour
 
     INITIAL_HASHTAG = "#" + hashtag
 
@@ -345,11 +351,11 @@ def get_final_tweets_pagination(df_input, hashtag:str, timestamp:datetime, write
     else:
         output_file_name_prefix = f"./data/{HASHTAG}_{date_string}_"
     
-    ENDDATE = datetime.now()
+    end_time = datetime.now()
  
-    return get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
+    return get_individual_final_tweet(HASHTAG, output_file_name_prefix, start_time, end_time, write_to_file=write_to_file)
 
-def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file:bool=True):
+def get_individual_final_tweet(HASHTAG, output_file_name_prefix, start_time, end_time, write_to_file:bool=True):
     if DEBUG:
         max_results = 10
         limit = 10
@@ -378,7 +384,8 @@ def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_
             media_fields=['url'],
             user_fields=['description'],
             expansions=['attachments.media_keys', 'author_id'],
-            end_time = ENDDATE,
+            start_time = start_time,
+            end_time = end_time,
             max_results = max_results).flatten(limit=limit)
 
         for tweet in my_paginator:

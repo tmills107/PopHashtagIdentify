@@ -13,16 +13,16 @@ PYTHON_EXEC = "/usr/local/bin/python3"
 now = datetime.now()
 TIMESTAMP = now
 
-def main(hashtag, timestamp, top_number, method="b"):
+def main(hashtag, end_time, top_number, method="b"):
     if method not in ["a", "b"]:
         raise ValueError("invalid method")
     
-    df_ids = get_tweets_pagination(hashtag, timestamp, write_to_file=True)
-    df_user_tweets = get_user_tweets(df_ids, hashtag, timestamp, write_to_file=True)
-    df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, timestamp, top_number, write_to_file=True)
+    df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True)
+    df_user_tweets = get_user_tweets(df_ids, hashtag, end_time, write_to_file=True)
+    df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, end_time, top_number, write_to_file=True)
 
     if method == "a":
-        tweets_df = get_final_tweets_pagination(df_all_twitter, hashtag, timestamp, write_to_file=True, override_hashtag=None)
+        tweets_df = get_final_tweets_pagination(df_all_twitter, hashtag, end_time, write_to_file=True, override_hashtag=None)
 
 now = datetime.now()
 year = int(now.strftime("%Y"))
