@@ -343,7 +343,7 @@ def get_final_tweets_pagination(hashtag:str, timestamp:str, hour:str, write_to_f
     else:
         output_file_name_prefix = f"./data/{HASHTAG}_{date_string}_"
     
-    ENDDATE = datetime.now()
+    ENDDATE = "2022-10-25T22:00:00-04:00" #datetime.now()
  
     get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
 
@@ -355,7 +355,7 @@ def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_
         max_results = 100
         limit = 5000
 
-    QUERY        = "#" + HASHTAG + ' -is:retweet -is:quote lang:en'
+    QUERY = "#" + HASHTAG + " -is:retweet -is:quote lang:en"
 
     bearer_token = os.environ.get('BEARER_TOKEN')
 
@@ -376,7 +376,6 @@ def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_
             media_fields=['url'],
             user_fields=['description'],
             expansions=['attachments.media_keys', 'author_id'],
-            #start_time = STARTDATE,
             end_time = ENDDATE,
             max_results = max_results).flatten(limit=limit)
 

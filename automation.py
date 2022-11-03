@@ -5,8 +5,7 @@ from utils import (
     get_tweets_pagination,
     get_user_tweets,
     top_hashtags,
-    get_final_tweets_pagination,
-    retry_query
+    get_final_tweets_pagination
 )
 
 PYTHON_EXEC = "/usr/local/bin/python3"
@@ -14,7 +13,7 @@ PYTHON_EXEC = "/usr/local/bin/python3"
 now = datetime.now()
 TIMESTAMP = now.strftime("%Y_%m_%d_%H_%M")
 
-def main(hashtag, timestamp, hour, top_number=20, method="b"):
+def main(hashtag, timestamp, hour, top_number, method="b"):
     if method not in ["a", "b"]:
         raise ValueError("invalid method")
     
@@ -23,7 +22,7 @@ def main(hashtag, timestamp, hour, top_number=20, method="b"):
     top_hashtags(hashtag, timestamp, hour, top_number, write_to_file=True)
 
     if method == "a":
-        get_final_tweets_pagination(hashtag, timestamp, hour, write_to_file=True)
+        get_final_tweets_pagination(hashtag, timestamp, hour, write_to_file=True, override_hashtag="blacktwitter")
 
 now = datetime.now()
 year = int(now.strftime("%Y"))
