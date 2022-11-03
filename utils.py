@@ -47,7 +47,7 @@ def retry_query(func):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, timestamp: datetime, hour: str, write_to_file:bool = True):
+def get_tweets_pagination(hashtag: str, timestamp: datetime, hour:str, write_to_file:bool = True):
 
     if DEBUG:
         max_results = 10
@@ -129,7 +129,7 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, hour: str, write_to
 
 
 
-def get_user_tweets(hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True):
+def get_user_tweets(input_df, hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True):
   if DEBUG:
       max_results = 10
   else:
@@ -162,9 +162,7 @@ def get_user_tweets(hashtag:str, timestamp:datetime, hour:str, write_to_file:boo
   client = make_client()
 
   # Read tweets.csv for IDs and convert it into a list of IDs
-  ids = pd.read_csv(file_name_prefix + 'tweets.csv', usecols=['author_id'], index_col=False)
-  ids_df = pd.DataFrame(ids)
-  id_list = ids_df['author_id'].values.tolist()
+  id_list = input_df['author_id'].values.tolist()
 
   if UNIQUE_USER_IDS:
     id_list = list(set(id_list))
@@ -228,7 +226,7 @@ def get_user_tweets(hashtag:str, timestamp:datetime, hour:str, write_to_file:boo
 ########################################################
 ########################################################
 
-def top_hashtags(hashtag:str, timestamp:datetime, hour:str, top_number:int, write_to_file:bool = True):
+def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, hour:str, top_number:int, write_to_file:bool = True):
   HASHTAG = "#" + hashtag
   date_string = make_timestring(timestamp)
   HOUR = hour
@@ -259,10 +257,10 @@ def top_hashtags(hashtag:str, timestamp:datetime, hour:str, top_number:int, writ
   client = make_client()
 
   # Opens the csv file created in the last script of the identified user tweets. 
-  hashtags_df = pd.read_csv(file_name_prefix + 'identified_user_tweets.csv', index_col=False)
+  hashtags_df = user_tweets
 
   # Removes the quotations created when python reads the hashtag items as strings. 
-  hashtags_df["hashtags"] = hashtags_df["hashtags"].map(eval)
+  #hashtags_df["hashtags"] = hashtags_df["hashtags"].map(eval)
 
   hashtags_list = []
 
@@ -314,14 +312,14 @@ def top_hashtags(hashtag:str, timestamp:datetime, hour:str, top_number:int, writ
   if write_to_file:
     df_all_twitter.to_csv(file_name_prefix + 'all_twitter_hashtag_count_top.csv', index=False)
   
-  return {"all_twitter": df_all_twitter, "sample": df_sample}
+  return (df_all_twitter, df_sample)
 
 ########################################################
 ########################################################
 ########################################################
 ########################################################
 
-def get_final_tweets_pagination(hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True, override_hashtag=None):
+def get_final_tweets_pagination(df_input, hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True, override_hashtag=None):
 
     date_string = make_timestring(timestamp)
     HOUR = hour
@@ -333,7 +331,7 @@ def get_final_tweets_pagination(hashtag:str, timestamp:datetime, hour:str, write
     else:
         file_name_prefix = f"./data/{INITIAL_HASHTAG}_{date_string}_{HOUR}_"
 
-    df = pd.read_csv(file_name_prefix + 'all_twitter_hashtag_count_top.csv')
+    df = df_input
 
     top_num_hashtags = list(df.itertuples(index=False, name=None))
 
@@ -349,7 +347,7 @@ def get_final_tweets_pagination(hashtag:str, timestamp:datetime, hour:str, write
     
     ENDDATE = datetime.now()
  
-    get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
+    return get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file=write_to_file)
 
 def get_individual_final_tweet(HASHTAG, output_file_name_prefix, ENDDATE, write_to_file:bool=True):
     if DEBUG:

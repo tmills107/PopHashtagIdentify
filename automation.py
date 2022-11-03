@@ -17,12 +17,12 @@ def main(hashtag, timestamp, hour, top_number, method="b"):
     if method not in ["a", "b"]:
         raise ValueError("invalid method")
     
-    get_tweets_pagination(hashtag, timestamp, hour, write_to_file=True)
-    get_user_tweets(hashtag, timestamp, hour, write_to_file=True)
-    top_hashtags(hashtag, timestamp, hour, top_number, write_to_file=True)
+    df_ids = get_tweets_pagination(hashtag, timestamp, hour, write_to_file=True)
+    df_user_tweets = get_user_tweets(df_ids, hashtag, timestamp, hour, write_to_file=True)
+    df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, timestamp, hour, top_number, write_to_file=True)
 
     if method == "a":
-        get_final_tweets_pagination(hashtag, timestamp, hour, write_to_file=True, override_hashtag=None)
+        tweets_df = get_final_tweets_pagination(df_all_twitter, hashtag, timestamp, hour, write_to_file=True, override_hashtag=None)
 
 now = datetime.now()
 year = int(now.strftime("%Y"))
