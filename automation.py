@@ -28,12 +28,12 @@ else:
     print("Running script in FULL mode")
 
 #################################################################
-HASHTAG_LIST = ["blacklivesmatter", "lgbt"]
+HASHTAG_LIST = ["blacklivesmatter"]
 FINAL_RUN = False
 TOP_NUMBER = 5
 time_year, time_month, time_day = (2022, 10, 31)
-hours_to_check = [8, 9, 10, 11] # 23 means 10pm will run
-#hours_to_check = list(range(8, 23)) # 23 means 10pm will run
+#hours_to_check = [8, 9, 10, 11] # 23 means 10pm will run
+hours_to_check = list(range(8, 23)) # 23 means 10pm will run
 #################################################################
 
 if not FINAL_RUN:
@@ -55,8 +55,8 @@ if not FINAL_RUN:
         print("\n\n")
         print("Sample:")
         print(df_final_sample)
-        hashtag_analysis(df_final_population, f"output/{HASHTAG}_population", HASHTAG, time_month, time_day)
-        hashtag_analysis(df_final_sample, f"output/{HASHTAG}_sample", HASHTAG, time_month, time_day)
+        hashtag_analysis(df_final_population, f"output/{time_month}_{time_day}_{HASHTAG}_population", HASHTAG, time_month, time_day)
+        hashtag_analysis(df_final_sample, f"output/{time_month}_{time_day}_{HASHTAG}_sample", HASHTAG, time_month, time_day)
 else:
     for HASHTAG in HASHTAG_LIST:
         datetime_day = datetime(time_year, time_month, time_day)
