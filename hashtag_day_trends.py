@@ -9,7 +9,7 @@ bearer_token = os.environ.get('BEARER_TOKEN')
 client = tweepy.Client(bearer_token = bearer_token,
     return_type=dict)
 
-hashtag_list = ["trump", "biden", "maga", "gop", "republicans"]
+hashtag_list = ["kanyewest", "blm", "blacklivesmatter", "blacktwitter", "blackwomen"]
 
 hashtag_count=[]
 
@@ -17,7 +17,7 @@ STARTTIME = '2022-10-25T08:00:00-04:00'
 ENDTIME = '2022-10-25T22:00:00-04:00'
 
 for hashtag in hashtag_list:
-    count = client.get_recent_tweets_count(query= "#" + hashtag,
+    count = client.get_recent_tweets_count(query= "#" + hashtag + ' -is:retweet -is:quote lang:en',
         granularity = 'hour',
         start_time = STARTTIME,
         end_time = ENDTIME)
@@ -39,4 +39,4 @@ sorted_hashtag_count = sorted(hashtag_count, key = lambda kv:kv[2], reverse=True
 
 df_all_twitter = pd.DataFrame(sorted_hashtag_count, columns=["hashtag", "Hourly" , "Total"])
 df_all_twitter.sort_values("Total", inplace=True, ascending=False)
-df_all_twitter.to_csv('./data/trump_all_twitter_hashtag_count_top.csv', index=False)
+df_all_twitter.to_csv('./data/blacktwitter_all_twitter_hashtag_count_top.csv', index=False)
