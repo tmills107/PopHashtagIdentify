@@ -1,4 +1,6 @@
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pause
 import collections
 from datetime import datetime
@@ -42,6 +44,28 @@ def retry_query(func):
         if not retry_success:
             raise ValueError("Could not make query")
     return wrapper
+
+########################################################
+########################################################
+########################################################
+########################################################
+
+def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
+  # Make Plots
+  plt.clf()
+  df = df_input.set_index('input_end_time', inplace=False)
+  sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
+  sns.scatterplot(data=df, hue="hashtag", x="input_start_time", y="counts", marker="o")
+  plt.title(f"#{hashtag} Daily Trend {month}/{day}")
+  plt.xlabel("Time")
+  plt.ylabel("Counts")
+  fig = plt.gcf()
+  fig.savefig(f"{output_prefix}_plot.png")
+  plt.clf()
+
+  ## Aggregate Data
+  df_input.groupby("hashtag").mean().to_csv(f"{output_prefix}_hourly_average.csv")
+  df_input.groupby("hashtag").sum().to_csv(f"{output_prefix}_daily_total.csv")
 
 ########################################################
 ########################################################
@@ -239,9 +263,8 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   HOUR = end_time.hour
   top_number = top_number
 
-  in_year, in_month, in_day, in_hour, in_minute = date_string.split("_")
   if DEBUG:
-    top_number = 1
+    top_number = 2
 
   if DEBUG:
     file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
@@ -291,17 +314,17 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   final_hashtagcount = []
 
   # Queries Twitter to find the count of the tweets for each of the 5 hashtags identified over the past 7 days. 
-  for hashtag, c in counts:
+  for _hashtag, c in counts:
     @retry_query
     def query_hashtag_counts():
-      hashtagcount = client.get_recent_tweets_count(query= "#" + hashtag,
+      hashtagcount = client.get_recent_tweets_count(query= "#" + _hashtag,
         granularity = 'hour',
         start_time=start_time,
         end_time=end_time)
       return hashtagcount
     hashtagcount = query_hashtag_counts()
     total_tweet_count = hashtagcount['meta']['total_tweet_count']
-    final_hashtagcount.append((hashtag, total_tweet_count))
+    final_hashtagcount.append((_hashtag, total_tweet_count))
 
   #Sorts the Hashtags (and counts) in decending order of count
   sorted_hashtag_count_final = sorted(final_hashtagcount, key = lambda kv:kv[1], reverse=True)
@@ -316,5 +339,13 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   df_all_twitter.sort_values("counts", inplace=True, ascending=False)
   if write_to_file:
     df_all_twitter.to_csv(file_name_prefix + 'all_twitter_hashtag_count_top.csv', index=False)
+  
+  df_all_twitter["input_hashtag"] = hashtag
+  df_all_twitter["input_start_time"] = start_time
+  df_all_twitter["input_end_time"] = end_time
+
+  df_sample["input_hashtag"] = hashtag
+  df_sample["input_start_time"] = start_time
+  df_sample["input_end_time"] = end_time
   
   return (df_all_twitter, df_sample)
