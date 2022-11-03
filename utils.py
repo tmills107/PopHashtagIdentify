@@ -48,14 +48,13 @@ def retry_query(func):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None):
+def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None):
 
     if DEBUG:
         max_results = 10
         limit = 10
     else:
         max_results = 100
-        limit = 500
 
     HASHTAG = "#" + hashtag
     date_string = make_timestring(end_time)
@@ -120,7 +119,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     user_tweets_dfs = pd.DataFrame(tweets_df)
 
     if write_to_file:
-        user_tweets_dfs.to_csv(file_name_prefix + 'tweets.csv', index=False)
+        user_tweets_dfs.to_csv(file_name_prefix + f"_{limit}_" + 'tweets.csv', index=False)
 
     return user_tweets_dfs
 

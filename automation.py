@@ -17,7 +17,7 @@ def main(hashtag, end_time, top_number, method="b", start_time = None):
     if method not in ["a", "b"]:
         raise ValueError("invalid method")
     
-    df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True, start_time=start_time)
+    df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True, start_time=start_time, limit=500)
     df_user_tweets = get_user_tweets(df_ids, hashtag, end_time, write_to_file=True, start_time=start_time)
     df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, end_time, top_number, write_to_file=True, start_time=start_time)
 
