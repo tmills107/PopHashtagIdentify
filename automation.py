@@ -13,16 +13,16 @@ PYTHON_EXEC = "/usr/local/bin/python3"
 now = datetime.now()
 TIMESTAMP = now
 
-def main(hashtag, timestamp, hour, top_number, method="b"):
+def main(hashtag, timestamp, top_number, method="b"):
     if method not in ["a", "b"]:
         raise ValueError("invalid method")
     
-    df_ids = get_tweets_pagination(hashtag, timestamp, hour, write_to_file=True)
-    df_user_tweets = get_user_tweets(df_ids, hashtag, timestamp, hour, write_to_file=True)
-    df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, timestamp, hour, top_number, write_to_file=True)
+    df_ids = get_tweets_pagination(hashtag, timestamp, write_to_file=True)
+    df_user_tweets = get_user_tweets(df_ids, hashtag, timestamp, write_to_file=True)
+    df_all_twitter, df_sample = top_hashtags(df_user_tweets, hashtag, timestamp, top_number, write_to_file=True)
 
     if method == "a":
-        tweets_df = get_final_tweets_pagination(df_all_twitter, hashtag, timestamp, hour, write_to_file=True, override_hashtag=None)
+        tweets_df = get_final_tweets_pagination(df_all_twitter, hashtag, timestamp, write_to_file=True, override_hashtag=None)
 
 now = datetime.now()
 year = int(now.strftime("%Y"))
@@ -50,4 +50,4 @@ for h in hours_to_check:
         pause.until(datetime(year, month, day, h))
     for HASHTAG in HASHTAG_LIST:
         print(f"Running at h={h} with {HASHTAG}")
-        main(HASHTAG, TIMESTAMP, h, top_number=TOP_NUMBER, method=METHOD)
+        main(HASHTAG, TIMESTAMP, top_number=TOP_NUMBER, method=METHOD)

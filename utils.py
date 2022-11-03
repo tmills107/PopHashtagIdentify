@@ -47,7 +47,7 @@ def retry_query(func):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, timestamp: datetime, hour:str, write_to_file:bool = True):
+def get_tweets_pagination(hashtag: str, timestamp: datetime, write_to_file:bool = True):
 
     if DEBUG:
         max_results = 10
@@ -58,7 +58,7 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, hour:str, write_to_
 
     HASHTAG = "#" + hashtag
     date_string = make_timestring(timestamp)
-    HOUR = hour
+    HOUR = timestamp.hour
 
     if DEBUG:
         file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
@@ -129,7 +129,7 @@ def get_tweets_pagination(hashtag: str, timestamp: datetime, hour:str, write_to_
 
 
 
-def get_user_tweets(input_df, hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True):
+def get_user_tweets(input_df, hashtag:str, timestamp:datetime, write_to_file:bool = True):
   if DEBUG:
       max_results = 10
   else:
@@ -137,7 +137,7 @@ def get_user_tweets(input_df, hashtag:str, timestamp:datetime, hour:str, write_t
 
   HASHTAG = "#" + hashtag
   date_string = make_timestring(timestamp)
-  HOUR = hour
+  HOUR = timestamp.hour
 
   if DEBUG:
     file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
@@ -226,10 +226,10 @@ def get_user_tweets(input_df, hashtag:str, timestamp:datetime, hour:str, write_t
 ########################################################
 ########################################################
 
-def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, hour:str, top_number:int, write_to_file:bool = True):
+def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, top_number:int, write_to_file:bool = True):
   HASHTAG = "#" + hashtag
   date_string = make_timestring(timestamp)
-  HOUR = hour
+  HOUR = timestamp.hour
   top_number = top_number
 
   in_year, in_month, in_day, in_hour, in_minute = date_string.split("_")
@@ -319,10 +319,10 @@ def top_hashtags(user_tweets, hashtag:str, timestamp:datetime, hour:str, top_num
 ########################################################
 ########################################################
 
-def get_final_tweets_pagination(df_input, hashtag:str, timestamp:datetime, hour:str, write_to_file:bool = True, override_hashtag=None):
+def get_final_tweets_pagination(df_input, hashtag:str, timestamp:datetime, write_to_file:bool = True, override_hashtag=None):
 
     date_string = make_timestring(timestamp)
-    HOUR = hour
+    HOUR = timestamp.hour
 
     INITIAL_HASHTAG = "#" + hashtag
 
