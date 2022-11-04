@@ -55,17 +55,20 @@ def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
   plt.clf()
   df = df_input.set_index('input_end_time', inplace=False)
   sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
-  sns.scatterplot(data=df, hue="hashtag", x="input_start_time", y="counts", marker="o")
+  ax = sns.scatterplot(data=df, hue="hashtag", x="input_start_time", y="counts", marker="o")
+  sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
   plt.title(f"#{hashtag} Daily Trend {month}/{day}")
   plt.xlabel("Time")
   plt.ylabel("Counts")
   fig = plt.gcf()
-  fig.savefig(f"{output_prefix}_plot.png")
+  fig.savefig(f"{output_prefix}_plot.png", bbox_inches = 'tight')
   plt.clf()
 
   ## Aggregate Data
-  df_input.groupby("hashtag").mean().to_csv(f"{output_prefix}_hourly_average.csv")
-  df_input.groupby("hashtag").sum().to_csv(f"{output_prefix}_daily_total.csv")
+  hourly_average = df_input.groupby("hashtag").mean()
+  hourly_average.sort_values('counts', ascending=False).to_csv(f"{output_prefix}_hourly_average.csv")
+  daily_total = df_input.groupby("hashtag").sum()
+  daily_total.sort_values('counts', ascending=False).to_csv(f"{output_prefix}_daily_total.csv")
 
 ########################################################
 ########################################################
@@ -76,11 +79,11 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
 
     if DEBUG:
         max_results = 10
-        limit = 10
+        limit = 50
     else:
         max_results = 100
 
-    HASHTAG = "#" + hashtag
+    HASHTAG = hashtag
     date_string = make_timestring(end_time)
     HOUR = end_time.hour
 
@@ -92,7 +95,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     bearer_token = os.environ.get('BEARER_TOKEN')
     assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
-    QUERY = HASHTAG + ' -is:retweet -is:quote lang:en' 
+    QUERY = "#" + HASHTAG + ' -is:retweet -is:quote lang:en' 
 
     @retry_query
     def make_query_1():
@@ -143,7 +146,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     user_tweets_dfs = pd.DataFrame(tweets_df)
 
     if write_to_file:
-        user_tweets_dfs.to_csv(file_name_prefix + f"_{limit}_" + 'tweets.csv', index=False)
+        user_tweets_dfs.to_csv(file_name_prefix + f"{limit}_" + 'tweets.csv', index=False)
 
     return user_tweets_dfs
 
@@ -264,7 +267,7 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   top_number = top_number
 
   if DEBUG:
-    top_number = 2
+    top_number = 5
 
   if DEBUG:
     file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
