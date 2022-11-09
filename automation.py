@@ -7,7 +7,8 @@ from utils import (
     get_tweets_pagination,
     get_user_tweets,
     top_hashtags,
-    hashtag_analysis
+    hashtag_analysis,
+    make_pruned_hashtag_list
 )
 
 PYTHON_EXEC = "/usr/local/bin/python3"
@@ -15,7 +16,8 @@ PYTHON_EXEC = "/usr/local/bin/python3"
 def main(hashtag, end_time, top_number, start_time = None):
     df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True, start_time=start_time, limit=100, user_tweet_limit=10)
     df_user_tweets = get_user_tweets(df_ids, hashtag, end_time, write_to_file=True, start_time=start_time)
-    df_population, df_sample = top_hashtags(df_user_tweets, hashtag, end_time, top_number, write_to_file=True, start_time=start_time)
+    hashtags_list = make_pruned_hashtag_list(df_user_tweets, top_number)
+    df_population, df_sample = top_hashtags(hashtags_list, hashtag, end_time, write_to_file=True, start_time=start_time)
     return (df_population, df_sample)
 
 def main_final(hashtag, end_time, limit=5000):
@@ -28,10 +30,10 @@ else:
     print("Running script in FULL mode")
 
 #################################################################
-HASHTAG_LIST = ["blacklivesmatter"]
-FINAL_RUN = True
+HASHTAG_LIST = ["lgbtq"]
+FINAL_RUN = False
 TOP_NUMBER = 5
-time_year, time_month, time_day = (2022, 11, 1)
+time_year, time_month, time_day = (2022, 11, 8)
 hours_to_check = list(range(8, 23)) # 23 means 10pm will run
 #hours_to_check = [8,9,10,11,12,13,14]
 #################################################################

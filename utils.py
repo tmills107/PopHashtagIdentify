@@ -274,24 +274,32 @@ def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool
 ########################################################
 ########################################################
 
-def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, write_to_file:bool = True, start_time = None):
-  if start_time == None:
-    start_time = end_time - timedelta(hours=1)
+def make_pruned_hashtag_list(user_tweets, top_number):
+  hashtags_list = []
 
-  HASHTAG = "#" + hashtag
-  date_string = make_timestring(end_time)
-  HOUR = end_time.hour
-  top_number = top_number
+  for author_id, group in user_tweets.groupby("author_id"):
+    _filtered_hashtags = list(group["hashtags"])
+    _filtered_hashtags = filter(lambda ht_l: len(ht_l) < HASHTAG_COUNT_LIMIT, _filtered_hashtags)
 
+    if UNIQUE_USER_HASHTAGS_COUNT:
+      _hash_list = list(set([item for sublist in _filtered_hashtags for item in sublist]))
+    else:
+      _hash_list = [item for sublist in _filtered_hashtags for item in sublist]
+
+    hashtags_list.extend(_hash_list)
+  
   if DEBUG:
     top_number = 5
 
-  if DEBUG:
-    file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
-  else:
-    file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+  # Finds the most common used hashtags (case sensitive) from the list.
+  counts = collections.Counter(hashtags_list).most_common(top_number)
 
+  if len(counts) == 0:
+    raise ValueError("No hashtags found")
 
+  return [h for (h,_) in counts]
+
+def all_twitter_counts(hashtags, start_time, end_time):
   # Get authentication information from the shell environment.
   bearer_token = os.environ.get('BEARER_TOKEN')
 
@@ -306,35 +314,10 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
     return client
   client = make_client()
 
-  # Opens the csv file created in the last script of the identified user tweets. 
-  hashtags_df = user_tweets
-
-  # Removes the quotations created when python reads the hashtag items as strings. 
-  #hashtags_df["hashtags"] = hashtags_df["hashtags"].map(eval)
-
-  hashtags_list = []
-
-  for author_id, group in hashtags_df.groupby("author_id"):
-    _filtered_hashtags = list(group["hashtags"])
-    _filtered_hashtags = filter(lambda ht_l: len(ht_l) < HASHTAG_COUNT_LIMIT, _filtered_hashtags)
-
-    if UNIQUE_USER_HASHTAGS_COUNT:
-      _hash_list = list(set([item for sublist in _filtered_hashtags for item in sublist]))
-    else:
-      _hash_list = [item for sublist in _filtered_hashtags for item in sublist]
-
-    hashtags_list.extend(_hash_list)
-
-  # Finds the most common used hashtags (case sensitive) from the list.
-  counts = collections.Counter(hashtags_list).most_common(top_number)
-
-  if len(counts) == 0:
-    raise ValueError("No hashtags found")
-
   final_hashtagcount = []
 
   # Queries Twitter to find the count of the tweets for each of the 5 hashtags identified over the past 7 days. 
-  for _hashtag, c in counts:
+  for _hashtag in hashtags:
     @retry_query
     def query_hashtag_counts():
       hashtagcount = client.get_recent_tweets_count(query= "#" + _hashtag,
@@ -349,11 +332,33 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   #Sorts the Hashtags (and counts) in decending order of count
   sorted_hashtag_count_final = sorted(final_hashtagcount, key = lambda kv:kv[1], reverse=True)
 
+  return sorted_hashtag_count_final
 
-  df_sample = pd.DataFrame(counts, columns=["hashtag", "counts"])
-  df_sample.sort_values("counts", inplace=True, ascending=False)
-  if write_to_file:
-    df_sample.to_csv(file_name_prefix + 'sample_hashtag_count_top.csv', index=False)
+def top_hashtags(hashtags_list, hashtag:str, end_time:datetime, write_to_file:bool = True, start_time = None):
+  if start_time == None:
+    start_time = end_time - timedelta(hours=1)
+
+  HASHTAG = "#" + hashtag
+  date_string = make_timestring(end_time)
+  HOUR = end_time.hour
+
+  if DEBUG:
+    file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
+  else:
+    file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+
+
+  # Opens the csv file created in the last script of the identified user tweets. 
+
+  # Removes the quotations created when python reads the hashtag items as strings. 
+  #hashtags_df["hashtags"] = hashtags_df["hashtags"].map(eval)
+
+  sorted_hashtag_count_final = all_twitter_counts(hashtags_list, start_time, end_time)
+
+  #df_sample = pd.DataFrame(counts, columns=["hashtag", "counts"])
+  #df_sample.sort_values("counts", inplace=True, ascending=False)
+  #if write_to_file:
+  #  df_sample.to_csv(file_name_prefix + 'sample_hashtag_count_top.csv', index=False)
 
   df_all_twitter = pd.DataFrame(sorted_hashtag_count_final, columns=["hashtag", "counts"])
   df_all_twitter.sort_values("counts", inplace=True, ascending=False)
@@ -364,8 +369,9 @@ def top_hashtags(user_tweets, hashtag:str, end_time:datetime, top_number:int, wr
   df_all_twitter["input_start_time"] = start_time
   df_all_twitter["input_end_time"] = end_time
 
-  df_sample["input_hashtag"] = hashtag
-  df_sample["input_start_time"] = start_time
-  df_sample["input_end_time"] = end_time
+  #df_sample["input_hashtag"] = hashtag
+  #df_sample["input_start_time"] = start_time
+  #df_sample["input_end_time"] = end_time
   
-  return (df_all_twitter, df_sample)
+  #return (df_all_twitter, df_sample)
+  return (df_all_twitter, None)
