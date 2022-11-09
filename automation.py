@@ -13,13 +13,13 @@ from utils import (
 PYTHON_EXEC = "/usr/local/bin/python3"
 
 def main(hashtag, end_time, top_number, start_time = None):
-    df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True, start_time=start_time, limit=100)
+    df_ids = get_tweets_pagination(hashtag, end_time, write_to_file=True, start_time=start_time, limit=100, user_tweet_limit=10)
     df_user_tweets = get_user_tweets(df_ids, hashtag, end_time, write_to_file=True, start_time=start_time)
     df_population, df_sample = top_hashtags(df_user_tweets, hashtag, end_time, top_number, write_to_file=True, start_time=start_time)
     return (df_population, df_sample)
 
 def main_final(hashtag, end_time, limit=5000):
-    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit)
+    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=10)
 
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 if DEBUG:

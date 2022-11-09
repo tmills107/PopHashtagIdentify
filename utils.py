@@ -75,7 +75,7 @@ def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
 ########################################################
 ########################################################
 
-def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None):
+def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None, user_tweet_limit=None):
 
     if DEBUG:
         max_results = 10
@@ -144,6 +144,14 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
         tweets_df.append(tweet_data)
 
     user_tweets_dfs = pd.DataFrame(tweets_df)
+
+    if user_tweet_limit != None:
+      groups = []
+      for (_,group) in user_tweets_dfs.groupby("author_id"):
+        group.sort_values("created_at", inplace=True, ascending=False)
+        group = group.head(user_tweet_limit)
+        groups.append(group)
+      user_tweets_dfs = pd.concat(groups)
 
     if write_to_file:
         user_tweets_dfs.to_csv(file_name_prefix + f"{limit}_" + 'tweets.csv', index=False)
