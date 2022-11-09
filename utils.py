@@ -78,10 +78,8 @@ def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
 def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None, user_tweet_limit=None):
 
     if DEBUG:
-        max_results = 10
-        limit = 50
-    else:
-        max_results = 100
+        limit = 200
+        print(f"Hashtag: {hashtag}")
 
     HASHTAG = hashtag
     date_string = make_timestring(end_time)
@@ -100,21 +98,31 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     @retry_query
     def make_query_1():
         tweets = []
+        followers_count_dict = {}
         client = tweepy.Client(wait_on_rate_limit = True, 
                             bearer_token = bearer_token)
 
+        page_limit = int(limit/100)
+        if page_limit == 0:
+          raise ValueError("Limit too low")
         my_paginator = tweepy.Paginator(client.search_recent_tweets, 
             query=QUERY,
             tweet_fields=['created_at', 'entities', 'public_metrics'],
             media_fields=['url'],
             start_time=start_time,
             end_time=end_time,
-            user_fields=['description'],
+            user_fields=['description', "public_metrics"],
             expansions=['attachments.media_keys', 'author_id'],
-            max_results = max_results).flatten(limit=limit)
-
-        for tweet in my_paginator:
+            max_results = 100,
+            limit = page_limit)
+        
+        for page in my_paginator:
+          for u in page.includes["users"]:
+            followers_count_dict[u.id] = u.public_metrics["followers_count"]
+          for tweet in page.data:
+            tweet["data"]["follower_count"] = followers_count_dict[tweet["author_id"]]
             tweets.append(tweet)
+
         return tweets
 
     tweets = make_query_1()
@@ -132,6 +140,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
         tweet_data = {
                 'tweet_id': item['id'],
                 'author_id': item['author_id'],
+                'follower_count': item['data']['follower_count'],
                 'text': item['text'],
                 'hashtags': hashtags,
                 'created_at': item['created_at'],
