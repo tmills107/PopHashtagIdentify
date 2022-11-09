@@ -28,7 +28,7 @@ else:
     print("Running script in FULL mode")
 
 #################################################################
-HASHTAG_LIST = ["takeoff", "blacktwitter", "gay", "lgbtq", "voteblue", "vote", "trump", "maga", "elonmusk"]
+HASHTAG_LIST = ["blacklivesmatter"]
 FINAL_RUN = True
 TOP_NUMBER = 5
 time_year, time_month, time_day = (2022, 11, 1)

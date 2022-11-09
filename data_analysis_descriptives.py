@@ -3,6 +3,8 @@ import os
 import re
 import numpy as np
 
+# find . -name '.DS_Store' -type f -delete
+
 file_names = os.listdir("./data/2022_11_01/2022_11_01_final_tweets")
 
 all_df = []
@@ -70,7 +72,7 @@ all_df = pd.concat(all_df)
 all_df = pd.get_dummies(all_df, columns = ['starting_hashtag'], prefix = "starting_hashtag")
 # all_df = all_df.iloc[:,1:]
 
-all_df.to_csv("./data/2022_11_01/2022_11_01_final_tweets")
+all_df.to_csv("./data/2022_11_01_final_tweets.csv")
 
 print("\n\n")
 

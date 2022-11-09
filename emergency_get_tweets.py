@@ -5,20 +5,18 @@ import tweepy
 
 # BEARER_TOKEN="AAAAAAAAAAAAAAAAAAAAAB2AZAEAAAAAKTgvleV%2BvXsTWFRxYtlLhYgh9%2Bg%3DRCnTpTCOYD4hHMUuEIXA2mdOstUkbZhxSdL9Ox4znWuuXY7Z9v"
 
-HASHTAG = "blm"
-date_string = "2022_10_25_22_00"
+HASHTAG = "lgbtq"
+date_string = "2022_11_07_22_00"
 HOUR = 10
 
-STARTDATE = "2022-10-25T08:00:00-04:00"
-ENDDATE = "2022-10-25T22:00:00-04:00"
+STARTDATE = "2022-11-07T08:00:00-04:00"
+ENDDATE = "2022-11-07T22:00:00-04:00"
 
 file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
 
 bearer_token = os.environ.get('BEARER_TOKEN')
 
 client = tweepy.Client(wait_on_rate_limit = True, bearer_token = bearer_token, return_type=dict)
-
-tweets_df = []
 
 QUERY = '#' + HASHTAG + ' -is:retweet -is:quote lang:en' 
 
@@ -40,14 +38,33 @@ my_paginator = tweepy.Paginator(client.search_recent_tweets,
     query=QUERY,
     tweet_fields=['created_at', 'entities', 'public_metrics'],
     media_fields=['url'],
-    user_fields=['description'],
-    expansions=['attachments.media_keys', 'author_id'],
+    user_fields=['description', 'public_metrics'],
+    expansions=['author_id'],
     end_time = ENDDATE,
-    max_results = 100).flatten(limit=5000)
+    max_results = 10,
+    limit = 2)
 
-tweets_df = [] 
+tweets_df = []
+for page in my_paginator:
+    for tweet in page:
+        users = {u["id"]: u for u in page.includes['users']} 
+        for tweet in page.data:
+            if users[tweet.author_id]:
+                user = users[tweet.author_id]
+                follower_count = user.public_metrics['followers_count']
+            tweet['data']['follower_count'] = int(follower_count)
+    tweets_df.append(page)
 
-for item in my_paginator:
+tweets = []
+for page in tweets_df:
+    for item in page:
+        tweets.append(item)
+
+tweets = pd.DataFrame(tweets)
+print(tweets)
+
+tweets_data = []
+for item in tweets_df:
     if "entities" not in item:
         continue
     if "hashtags" in item["entities"]:
@@ -58,6 +75,7 @@ for item in my_paginator:
     tweet_data = {
         'tweet_id': item['id'],
         'author_id': item['author_id'],
+        'follower_count': item['follower_count'],
         'text': item['text'],
         'hashtags': hashtags,
         'created_at': item['created_at'],
@@ -67,8 +85,9 @@ for item in my_paginator:
         'reply_count': item['public_metrics']['reply_count'],
         'retweet_count': item['public_metrics']['retweet_count']
     }     
-    tweets_df.append(tweet_data)
+    tweets_data.append(tweet_data)
 
-user_tweets_dfs = pd.DataFrame(tweets_df)
+user_tweets_df = pd.DataFrame(tweets_data)
+print(user_tweets_df)
 
-user_tweets_dfs.to_csv(file_name_prefix + 'final_tweets.csv')
+user_tweets_df.to_csv(file_name_prefix + 'final_tweets.csv')
