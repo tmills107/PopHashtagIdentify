@@ -29,11 +29,11 @@ else:
 
 #################################################################
 HASHTAG_LIST = ["blacklivesmatter"]
-FINAL_RUN = True
+FINAL_RUN = False
 TOP_NUMBER = 5
-time_year, time_month, time_day = (2022, 11, 1)
-hours_to_check = list(range(8, 23)) # 23 means 10pm will run
-#hours_to_check = [8,9,10,11,12,13,14]
+time_year, time_month, time_day = (2022, 11, 8)
+#hours_to_check = list(range(8, 23)) # 23 means 10pm will run
+hours_to_check = [8,9,10]
 #################################################################
 
 if not FINAL_RUN:
