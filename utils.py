@@ -1,4 +1,5 @@
 import os
+from copy import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pause
@@ -50,12 +51,29 @@ def retry_query(func):
 ########################################################
 ########################################################
 
+def fill_empty_counts(df:pd.DataFrame):
+  _df = copy(df)
+
+  all_start_times = list(df["input_start_time"].unique())
+
+  g_list = []
+  for (h,g) in _df.groupby("hashtag"):
+    for t in all_start_times:
+      if t not in g["input_start_time"]:
+        g = pd.concat([g, pd.DataFrame([{"hashtag": h, "input_start_time": t, "counts": 0, "input_end_time": t}])], ignore_index=True)
+        print("I filled a time!")
+    g_list.append(g)
+  _df = pd.concat(g_list)
+
+  return _df
+
 def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
   # Make Plots
   plt.clf()
-  df = df_input.set_index('input_end_time', inplace=False)
+  df = df_input # .set_index('input_end_time', inplace=False)
+  #df_input = fill_empty_counts(df_input)
   sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
-  ax = sns.scatterplot(data=df, hue="hashtag", x="input_start_time", y="counts", marker="o")
+  ax = sns.scatterplot(data=df_input, hue="hashtag", x="input_start_time", y="counts", marker="o")
   sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
   plt.title(f"#{hashtag} Daily Trend {month}/{day}")
   plt.xlabel("Time")
@@ -274,7 +292,7 @@ def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool
 ########################################################
 ########################################################
 
-def make_pruned_hashtag_list(user_tweets, top_number):
+def make_pruned_hashtag_list(user_tweets, top_number, return_counts = False):
   hashtags_list = []
 
   for author_id, group in user_tweets.groupby("author_id"):
@@ -297,9 +315,12 @@ def make_pruned_hashtag_list(user_tweets, top_number):
   if len(counts) == 0:
     raise ValueError("No hashtags found")
 
+  if return_counts:
+    return counts
+
   return [h for (h,_) in counts]
 
-def all_twitter_counts(hashtags, start_time, end_time):
+def all_twitter_top_counts(hashtags, start_time, end_time):
   # Get authentication information from the shell environment.
   bearer_token = os.environ.get('BEARER_TOKEN')
 
@@ -327,7 +348,7 @@ def all_twitter_counts(hashtags, start_time, end_time):
       return hashtagcount
     hashtagcount = query_hashtag_counts()
     total_tweet_count = hashtagcount['meta']['total_tweet_count']
-    final_hashtagcount.append((_hashtag, total_tweet_count))
+    final_hashtagcount.append((_hashtag, total_tweet_count, hashtagcount['data']))
 
   #Sorts the Hashtags (and counts) in decending order of count
   sorted_hashtag_count_final = sorted(final_hashtagcount, key = lambda kv:kv[1], reverse=True)
@@ -353,7 +374,7 @@ def top_hashtags(hashtags_list, hashtag:str, end_time:datetime, write_to_file:bo
   # Removes the quotations created when python reads the hashtag items as strings. 
   #hashtags_df["hashtags"] = hashtags_df["hashtags"].map(eval)
 
-  sorted_hashtag_count_final = all_twitter_counts(hashtags_list, start_time, end_time)
+  sorted_hashtag_count_final = all_twitter_top_counts(hashtags_list, start_time, end_time)
 
   #df_sample = pd.DataFrame(counts, columns=["hashtag", "counts"])
   #df_sample.sort_values("counts", inplace=True, ascending=False)
