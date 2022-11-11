@@ -5,12 +5,23 @@ import numpy as np
 
 # find . -name '.DS_Store' -type f -delete
 
-file_names = os.listdir("./data/2022_11_01/2022_11_01_final_tweets")
+YEAR = "2022"
+MONTH = "11"
+DAY = "01"
+
+DATE_STRING = f"{YEAR}_{MONTH}_{DAY}"
+
+file_names = os.listdir(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets")
 
 all_df = []
+metrics = []
 
 for file in file_names:
-    df = pd.read_csv(f"/Users/thomasmiller/Documents/ThesisProject/Protocol - Automation/data/2022_11_01/2022_11_01_final_tweets/{file}")
+    try:
+        os.remove(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets/.DS_Store")
+    except:
+        pass
+    df = pd.read_csv(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets/{file}")
 
     df = df.iloc[:,1:]
 
@@ -66,13 +77,26 @@ for file in file_names:
     replies_percentage = (replies_count/num_tweets)*100
     print(f"Tweets with Replies = {replies_count} ({round(replies_percentage,2)}%)")
 
+    metrics.append({
+        "hashtag": hashtag, 
+        "number_of_tweets": num_tweets, 
+        "num_unique_users": id_count,
+        "tweet_to_user_ratio": tweet_user_ratio,
+        "tweets_with_retweets": retweet_count,
+        "tweets_with_retweets_percentage": round(retweet_percentage, 2),
+        "tweets_with_likes": like_count,
+        "tweets_with_likes_percentage": round(like_percentage, 2),
+        "tweets_with_replies": replies_count,
+        "tweets_with_replies_percentage": round(replies_percentage,2)
+        })
+
     all_df.append(df)
 
 all_df = pd.concat(all_df)
 all_df = pd.get_dummies(all_df, columns = ['starting_hashtag'], prefix = "starting_hashtag")
 # all_df = all_df.iloc[:,1:]
 
-all_df.to_csv("./data/2022_11_01_final_tweets.csv")
+all_df.to_csv(f"./data/{DATE_STRING}_final_tweets.csv")
 
 print("\n\n")
 
@@ -101,3 +125,20 @@ all_tweet_replies_df = all_df[all_df["reply_count"]>=1]
 all_replies_count = len(all_tweet_replies_df)
 all_replies_percentage = (all_replies_count/all_num_tweets)*100
 print(f"All Tweets with Replies = {all_replies_count} ({round(all_replies_percentage,2)}%)")
+
+metrics.append({
+        "hashtag": "all", 
+        "number_of_tweets": all_num_tweets, 
+        "num_unique_users": id_all_count,
+        "tweet_to_user_ratio": all_tweet_user_ratio,
+        "tweets_with_retweets": all_retweet_count,
+        "tweets_with_retweets_percentage": round(all_retweet_percentage, 2),
+        "tweets_with_likes": all_like_count,
+        "tweets_with_likes_percentage": round(all_like_percentage, 2),
+        "tweets_with_replies": all_replies_count,
+        "tweets_with_replies_percentage": round(all_replies_percentage,2)
+        })
+
+df_metrics = pd.DataFrame(metrics)
+
+df_metrics.to_csv(f"./data/{DATE_STRING}_descriptives.csv")
