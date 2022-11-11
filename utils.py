@@ -70,14 +70,13 @@ def retry_query(func):
 def fill_empty_counts(df:pd.DataFrame):
   _df = copy(df)
 
-  all_start_times = list(df["input_start_time"].unique())
+  all_start_times = list(_df["input_start_time"].unique())
 
   g_list = []
   for (h,g) in _df.groupby("hashtag"):
     for t in all_start_times:
-      if t not in g["input_start_time"]:
+      if t not in list(g["input_start_time"]):
         g = pd.concat([g, pd.DataFrame([{"hashtag": h, "input_start_time": t, "counts": 0, "input_end_time": t}])], ignore_index=True)
-        print("I filled a time!")
     g_list.append(g)
   _df = pd.concat(g_list)
 
@@ -93,20 +92,23 @@ def fill_empty_counts(df:pd.DataFrame):
 ## Outputs: Line plot of hashtag count over time (Saved as png) 
 ##          & Aggregate Data (Hourly Average and Daily Total) for each hashtag) (Saved as CSVs)
 def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or_population):
+  df = fill_empty_counts(df_input)
   
   if DEBUG:
         file_name_prefix = f"./data/debug_{hashtag}_{sample_or_population}_{month}_{day}"
   else:
         file_name_prefix = f"./data/{hashtag}_{sample_or_population}_{month}_{day}"
 
+  df.to_csv(file_name_prefix + "_count_data.csv")
+
   ## Aggregate Data
 
   ## Hourly Average
-  hourly_average = df_input.groupby("hashtag").mean()
+  hourly_average = df.groupby("hashtag").mean()
   hourly_average.sort_values('counts', ascending=False).to_csv(f"{file_name_prefix}_hourly_average.csv")
   
   ## Daily Total
-  daily_total = df_input.groupby("hashtag").sum()
+  daily_total = df.groupby("hashtag").sum()
   daily_total.sort_values('counts', ascending=False).to_csv(f"{file_name_prefix}_daily_total.csv")
   
   if sample_or_population == 'population':
@@ -114,25 +116,31 @@ def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or
     week_start_day = datetime(year, month, day)
     week_start_time = week_start_day + timedelta(days=-6)
     week_end_time = datetime(year, month, day)
-    hashtags = list(set(df_input['hashtag']))
+    hashtags = list(set(df['hashtag']))
 
     ## Weekly Total 
     weekly_total = weekly_counts(hashtags, week_start_time, week_end_time)
     weekly_total.sort_values('weekly_total', ascending=False).to_csv(f"{file_name_prefix}_weekly_total.csv")
   
-  # ## Make Plots
-  # plt.clf()
-  # df = df_input # .set_index('input_end_time', inplace=False)
-  # #df_input = fill_empty_counts(df_input)
-  # sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
-  # ax = sns.scatterplot(data=df_input, hue="hashtag", x="input_start_time", y="counts", marker="o")
-  # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-  # plt.title(f"#{hashtag} Daily Trend {month}/{day}")
-  # plt.xlabel("Time")
-  # plt.ylabel("Counts")
-  # fig = plt.gcf()
-  # fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight')
-  # plt.clf()
+  ## Make Plots
+  #plt.clf()
+
+  x_ticks = list(df["input_start_time"])
+  x_tick_labels = list(pd.DatetimeIndex(list(df["input_start_time"])).hour)
+
+  print(df)
+
+  ax = sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=True, markers="o")
+  ax.set_xticks(x_ticks)
+  ax.set_xticklabels(x_tick_labels)
+
+  sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+  plt.title(f"#{hashtag} Daily Trend {month}/{day}")
+  plt.xlabel("Time")
+  plt.ylabel("Counts")
+  fig = plt.gcf()
+  fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight')
+  plt.clf()
 
 ########################################################
 ########################################################
@@ -382,7 +390,7 @@ def make_pruned_hashtag_list(user_tweets, top_number, return_counts = True):
     hashtags_list.extend(_hash_list)
   
   if DEBUG:
-    top_number = 5
+    top_number = 10
 
   ## Finds the most common used hashtags from the list.
   counts = collections.Counter(hashtags_list).most_common(top_number)
