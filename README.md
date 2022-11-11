@@ -15,7 +15,3 @@ To later deactivate the Conda environment, run `conda deactivate`.
 
 ## Data Collection Diagram
 ![Process Diagram](auotmation_diagram.drawio.svg)
-
-## Data Analysis Diagram
-![Data Analysis Diagram](data_analysis_diagram(2).drawio.svg)
-
