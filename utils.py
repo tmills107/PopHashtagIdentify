@@ -118,7 +118,7 @@ def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or
 
     ## Weekly Total 
     weekly_total = weekly_counts(hashtags, week_start_time, week_end_time)
-    weekly_total.sort_values('weekly_total', ascending=False).to_csv(f"{file_name_prefix}_pop_weekly_total.csv")
+    weekly_total.sort_values('weekly_total', ascending=False).to_csv(f"{file_name_prefix}_weekly_total.csv")
   
   # ## Make Plots
   # plt.clf()

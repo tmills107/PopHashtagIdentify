@@ -28,10 +28,11 @@ else:
 ## Main Function that Repeats Steps 1-3 in Time Window Provided. 
 def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PLOT_NUMBER, TOP_NUMBER):
     for HASHTAG in HASHTAG_LIST:
+        
         all_hashtag_list = []
         df_sample_list = []
+        
         for h in hours_to_check:
-            
             ## Setting Hour Window to Query
             datetime_day = datetime(time_year, time_month, time_day) # First moment of day to check
             end_time = datetime_day + timedelta(hours=h)
@@ -43,7 +44,7 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
             ## Step 2 (getting user ids and last 10 tweets per user) | Output: df of user tweets
             df_user_tweets = get_user_tweets(df_ids, HASHTAG, end_time, write_to_file=True, start_time=start_time)
             
-            ## Step 3 (getting hashtags used in user tweets) | Output: TOP_NUMBER list of hashtags 
+            ## Step 3 (getting hashtags used in user tweets) | Output: TOP_NUMBER list of hashtags w/ counts 
             hashtags_list = make_pruned_hashtag_list(df_user_tweets, TOP_NUMBER, return_counts=True)
             all_hashtag_list.extend(hashtags_list)
 
@@ -59,26 +60,25 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
         df_sample = pd.concat(df_sample_list)
 
         ## Finds Top 5 Hashtags Used Through All Samples Combined
-        # all_hashtag_list = sorted(all_hashtag_list, key = lambda x: x[1], reverse=True)
         d = {x: 0 for x, _ in all_hashtag_list}
         for name, num in all_hashtag_list:
             d[name] += num
         all_hashtag_list = list(map(tuple, d.items()))[0:5]
-        top_sample_hashtags = list(zip(*all_hashtag_list))[0]
+        top_sample_list = list(zip(*all_hashtag_list))[0]
 
         ## Sets Count Collection Time to 8am-10pm for the Day of Query 
         START_TIME = datetime_day + timedelta(hours=8)
         END_TIME = datetime_day + timedelta(hours=22)
 
-        ## Counts Hashtag Use in All of Twitter (Returns TOP_NUMBER many)
-        counts = all_twitter_top_counts(top_sample_hashtags, START_TIME, END_TIME)[0:PLOT_NUMBER] 
-
-        ## Filtering Sample Hashtags (and counts) by the Top 5 Hashtags 
+        ## Filtering Sample Hashtags (and counts) by the Top PLOT_NUMBER Hashtags 
         filtered_sample = df_sample.loc[df_sample['hashtag'].isin([h for (h,_) in all_hashtag_list])]
 
         ## Making Sample Chart and Figures
         sample_or_population = "sample"
         hashtag_analysis(filtered_sample, HASHTAG, time_year, time_month, time_day, sample_or_population)
+
+        ## Counts Hashtag Use in All of Twitter (Returns PLOT_NUMBER many)
+        counts = all_twitter_top_counts(top_sample_list, START_TIME, END_TIME)[0:PLOT_NUMBER] 
 
         ## Prepping Population Count Data for Analysis  
         _columns = ["hashtag", "counts", "input_start_time", "input_end_time"]
