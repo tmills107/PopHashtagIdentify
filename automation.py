@@ -105,7 +105,7 @@ def final(hashtag, end_time,  limit=5000):
 #################################################################
 HASHTAG_LIST = ["amazon", "kyrie", "blacktwitter", "votebluein2022",
                 "voteblue", "lgbt", "lgbtq", "usa", "trump", "maga"]  ## Input without # (added in querying functions)
-FINAL_RUN = True
+FINAL_RUN = False
 TOP_NUMBER = 10                                         ## Number of Hashtags Identified in User Tweets
 PLOT_NUMBER = 5                                         ## Number of Hashtags to be Plotted From Population Top Hashtag
 time_year, time_month, time_day = (2022, 11, 10)         ## Year, Month, and Day to be Queried (must be within the past week) 
