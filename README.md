@@ -9,6 +9,7 @@ To install the python environment and run the code, follow these steps:
 3. Activate the Conda environment with `conda activate twitter_hashtag_analysis`.
 4. Make the main script executable with `chmod +x run.sh`.
 5. Run the main script with `./run.sh`.
+6. Run the descriptive statistics file with `./run_descriptives.sh`.
 
 To later deactivate the Conda environment, run `conda deactivate`.
 

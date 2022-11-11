@@ -128,8 +128,6 @@ def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or
   x_ticks = list(df["input_start_time"])
   x_tick_labels = list(pd.DatetimeIndex(list(df["input_start_time"])).hour)
 
-  print(df)
-
   ax = sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=True, markers="o")
   ax.set_xticks(x_ticks)
   ax.set_xticklabels(x_tick_labels)

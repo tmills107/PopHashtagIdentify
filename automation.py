@@ -10,7 +10,6 @@ from datetime import timedelta
 from utils import (
     get_tweets_pagination,
     get_user_tweets,
-    # top_hashtags,
     all_twitter_top_counts,
     hashtag_analysis,
     make_pruned_hashtag_list
@@ -103,9 +102,7 @@ def final(hashtag, end_time,  limit=5000):
 ## INPUTS ##
 #################################################################
 #################################################################
-#HASHTAG_LIST = ["amazon", "kyrie", "blacktwitter", "votebluein2022",
-#                "voteblue", "lgbt", "lgbtq", "usa", "trump", "maga"]  ## Input without # (added in querying functions)
-HASHTAG_LIST = ["blacktwitter"]
+HASHTAG_LIST = ["blacktwitter", "lgbtq", "bluewave", "trump"]  ## Input without # (added in querying functions)
 FINAL_RUN = False
 TOP_NUMBER = 10                                         ## Number of Hashtags Identified in User Tweets
 PLOT_NUMBER = 5                                         ## Number of Hashtags to be Plotted From Population Top Hashtag
