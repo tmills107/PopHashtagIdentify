@@ -29,6 +29,7 @@ dependencies:
     - oauthlib==3.2.2
     - packaging==21.3
     - pandas==1.5.1
+    - pause==0.3
     - pillow==9.3.0
     - pyparsing==3.0.9
     - python-dateutil==2.8.2
