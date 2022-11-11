@@ -9,6 +9,9 @@ from datetime import timedelta
 import pandas as pd
 import tweepy
 
+########################################################
+########################################################
+## Standard Inputs 
 API_RETRY_COUNT = int(os.getenv("API_RETRY_COUNT"))
 API_RETRY_WAIT_MINS = int(os.getenv("API_RETRY_WAIT_MINS"))
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
@@ -21,9 +24,19 @@ HASHTAG_COUNT_LIMIT = 15
 ########################################################
 ########################################################
 
+## MAKE TIMESTRING
+## Makes timestring (for naming purposed) from a Datetime object
 def make_timestring(d: datetime):
   return d.strftime("%Y_%m_%d_%H_%M")
 
+########################################################
+########################################################
+########################################################
+########################################################
+
+## RETRY QUERY
+## Query wrapper so that if the query fails (disconnected from API) it will retry the query 
+## for an inputed number of tries (API_RETRY_COUNT) seperated by an inputed number of minutes (API_RETRY_WAIT_MINUTES) 
 def retry_query(func):
     def wrapper():
         current_retries = 0
@@ -51,6 +64,9 @@ def retry_query(func):
 ########################################################
 ########################################################
 
+## FILL EMPTY COLUMN FROM HASHTAG ANALYSIS
+## Inputs: DataFrame (columns are hashtag, counts, start_time, and end_time) 
+## Outputs: DataFrame (columns are hashtag, counts, start_time, and end_time) with empty observations filled with Zero (mainly for sample)
 def fill_empty_counts(df:pd.DataFrame):
   _df = copy(df)
 
@@ -67,37 +83,69 @@ def fill_empty_counts(df:pd.DataFrame):
 
   return _df
 
-def hashtag_analysis(df_input:pd.DataFrame, output_prefix, hashtag, month, day):
-  # Make Plots
-  plt.clf()
-  df = df_input # .set_index('input_end_time', inplace=False)
-  #df_input = fill_empty_counts(df_input)
-  sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
-  ax = sns.scatterplot(data=df_input, hue="hashtag", x="input_start_time", y="counts", marker="o")
-  sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-  plt.title(f"#{hashtag} Daily Trend {month}/{day}")
-  plt.xlabel("Time")
-  plt.ylabel("Counts")
-  fig = plt.gcf()
-  fig.savefig(f"{output_prefix}_plot.png", bbox_inches = 'tight')
-  plt.clf()
+########################################################
+########################################################
+########################################################
+########################################################
+
+## HASHTAG ANALYSIS 
+## Inputs: DataFrame (columns are hashtag, counts, start_time, and end_time)
+## Outputs: Line plot of hashtag count over time (Saved as png) 
+##          & Aggregate Data (Hourly Average and Daily Total) for each hashtag) (Saved as CSVs)
+def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or_population):
+  
+  if DEBUG:
+        file_name_prefix = f"./data/debug_{hashtag}_{sample_or_population}_{month}_{day}"
+  else:
+        file_name_prefix = f"./data/{hashtag}_{sample_or_population}_{month}_{day}"
 
   ## Aggregate Data
+
+  ## Hourly Average
   hourly_average = df_input.groupby("hashtag").mean()
-  hourly_average.sort_values('counts', ascending=False).to_csv(f"{output_prefix}_hourly_average.csv")
+  hourly_average.sort_values('counts', ascending=False).to_csv(f"{file_name_prefix}_hourly_average.csv")
+  
+  ## Daily Total
   daily_total = df_input.groupby("hashtag").sum()
-  daily_total.sort_values('counts', ascending=False).to_csv(f"{output_prefix}_daily_total.csv")
+  daily_total.sort_values('counts', ascending=False).to_csv(f"{file_name_prefix}_daily_total.csv")
+  
+  if sample_or_population == 'population':
+    ## Weekly Total Time Setting
+    week_start_day = datetime(year, month, day)
+    week_start_time = week_start_day + timedelta(days=-6)
+    week_end_time = datetime(year, month, day)
+    hashtags = list(set(df_input['hashtag']))
+
+    ## Weekly Total 
+    weekly_total = weekly_counts(hashtags, week_start_time, week_end_time)
+    weekly_total.sort_values('weekly_total', ascending=False).to_csv(f"{file_name_prefix}_pop_weekly_total.csv")
+  
+  # ## Make Plots
+  # plt.clf()
+  # df = df_input # .set_index('input_end_time', inplace=False)
+  # #df_input = fill_empty_counts(df_input)
+  # sns.lineplot(data=df, hue="hashtag", x="input_start_time", y="counts", legend=False)
+  # ax = sns.scatterplot(data=df_input, hue="hashtag", x="input_start_time", y="counts", marker="o")
+  # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+  # plt.title(f"#{hashtag} Daily Trend {month}/{day}")
+  # plt.xlabel("Time")
+  # plt.ylabel("Counts")
+  # fig = plt.gcf()
+  # fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight')
+  # plt.clf()
 
 ########################################################
 ########################################################
 ########################################################
 ########################################################
 
+## GET TWEETS (PAGINATION)
+## Inputs: Hashtag, Time to Query = End Time (Collected in time reverse order), User Tweet Limit: Number of Tweets Collected Per User (limiting bots)
+## Outputs: DataFrame of tweets (Written to file too)
 def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None, user_tweet_limit=None):
 
     if DEBUG:
-        limit = 200
-        print(f"Hashtag: {hashtag}")
+        limit = 100
 
     HASHTAG = hashtag
     date_string = make_timestring(end_time)
@@ -108,46 +156,64 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     else:
         file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
 
+    ## Get authentication information from the shell environment.
     bearer_token = os.environ.get('BEARER_TOKEN')
+    
+    ## If environment variable isn't defined, a reminder pops up.
     assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
-    QUERY = "#" + HASHTAG + ' -is:retweet -is:quote lang:en' 
+    ## Sets the query as "#" + term inputed, exludes retweets and quote tweets, find tweets only in English
+    QUERY = f"#{HASHTAG} -is:retweet -is:quote -is:nullcast lang:en" 
 
     @retry_query
     def make_query_1():
+        ##Creates Tweets DataFrame 
         tweets = []
+        
+        ##Creates dictionary to place tweet authors followers count 
         followers_count_dict = {}
+        username_dict = {}
+        
+        ## Create .Client() object that will let us access the full archive.
         client = tweepy.Client(wait_on_rate_limit = True, 
                             bearer_token = bearer_token)
 
+        ## Sets the number of pages the paginator will go through 
+        ## (Calculated by dividing total number of tweets desired by 100 (max number of results per page))
         page_limit = int(limit/100)
         if page_limit == 0:
           raise ValueError("Limit too low")
+        
+        ## Builds Query for tweets including desired tweet/user/media fields and expansions
         my_paginator = tweepy.Paginator(client.search_recent_tweets, 
             query=QUERY,
             tweet_fields=['created_at', 'entities', 'public_metrics'],
             media_fields=['url'],
             start_time=start_time,
             end_time=end_time,
-            user_fields=['description', "public_metrics"],
+            user_fields=['username', 'description', 'public_metrics'],
             expansions=['attachments.media_keys', 'author_id'],
             max_results = 100,
             limit = page_limit)
         
+        ## Add Followers Count and Username to main data object
         for page in my_paginator:
           for u in page.includes["users"]:
             followers_count_dict[u.id] = u.public_metrics["followers_count"]
+            username_dict[u.id] = u["username"]
           for tweet in page.data:
             tweet["data"]["follower_count"] = followers_count_dict[tweet["author_id"]]
+            tweet["data"]["username"] = username_dict[tweet["author_id"]]
             tweets.append(tweet)
 
         return tweets
 
+    ## Making Query
     tweets = make_query_1()
 
     tweets_df = []
     # Go through each tweet from each user and oragnize the data into coloumns for export. 
-    for item in tweets: #removed ['data']
+    for item in tweets:
         if "entities" not in item:
             continue
         if "hashtags" in item["entities"]:
@@ -158,6 +224,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
         tweet_data = {
                 'tweet_id': item['id'],
                 'author_id': item['author_id'],
+                'username': item['data']['username'],
                 'follower_count': item['data']['follower_count'],
                 'text': item['text'],
                 'hashtags': hashtags,
@@ -172,6 +239,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
 
     user_tweets_dfs = pd.DataFrame(tweets_df)
 
+    ## If data includes more than [user_tweet_limit tweets] per a single user it takes only the most recent [user_tweet_limit] from that user
     if user_tweet_limit != None:
       groups = []
       for (_,group) in user_tweets_dfs.groupby("author_id"):
@@ -180,44 +248,42 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
         groups.append(group)
       user_tweets_dfs = pd.concat(groups)
 
+    ## Writed to File 
     if write_to_file:
-        user_tweets_dfs.to_csv(file_name_prefix + f"{limit}_" + 'tweets.csv', index=False)
+        user_tweets_dfs.to_csv(file_name_prefix + 'tweets' + f"_{limit}" + '.csv', index=False)
 
+    ## Returns DataFrame of Tweets
     return user_tweets_dfs
 
-
 ########################################################
 ########################################################
 ########################################################
 ########################################################
 
-
-
+## GET USER TWEETS
+## Inputs: DataFrame of tweets
+## Outputs: DataFrame of user's tweets (Writes to file)
 def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool = True, start_time = None):
   if DEBUG:
       max_results = 10
   else:
       max_results = 10
 
-  HASHTAG = "#" + hashtag
   date_string = make_timestring(end_time)
   HOUR = end_time.hour
 
   if DEBUG:
-    file_name_prefix = f"./data/debug_{HASHTAG}_{date_string}_{HOUR}_"
+    file_name_prefix = f"./data/debug_{hashtag}_{date_string}_{HOUR}_"
   else:
-    file_name_prefix = f"./data/{HASHTAG}_{date_string}_{HOUR}_"
+    file_name_prefix = f"./data/{hashtag}_{date_string}_{HOUR}_"
 
-
-  # Get authentication information from the shell environment.
+  ## Get authentication information from the shell environment.
   bearer_token = os.environ.get('BEARER_TOKEN')
 
-
-  # If environment variable isn't defined, a reminder pops up.
+  ## If environment variable isn't defined, a reminder pops up.
   assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
-  # Create .Client() object that will let us access the full archive.
-
+  ## Create .Client() object that will let us access the full archive.
   @retry_query
   def make_client():
     client = tweepy.Client(wait_on_rate_limit = True, bearer_token = bearer_token, return_type=dict)
@@ -225,16 +291,17 @@ def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool
 
   client = make_client()
 
-  # Read tweets.csv for IDs and convert it into a list of IDs
+  ## Read tweets df for IDs and convert it into a list of IDs
   id_list = input_df['author_id'].values.tolist()
 
+  ## Limits Repeats of Users in ID List (so each unique user only queried once)
   if UNIQUE_USER_IDS:
     id_list = list(set(id_list))
 
   tweets_df = []
 
   for curr_user in id_list:
-    # For each user, you retrieve the most recent 10 tweets that they posted.
+    ## For each user, you retrieve the most recent 10 tweets that they posted.
     @retry_query
     def query_user_tweets():
       usertweets = client.get_users_tweets(id = curr_user,
@@ -292,13 +359,21 @@ def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool
 ########################################################
 ########################################################
 
-def make_pruned_hashtag_list(user_tweets, top_number, return_counts = False):
+## MAKING PRUNED HASHTAG LIST FROM INPUTED DATAFRAME OF TWEETS
+## Inputs: Tweet DataFrame & Number of Hashtags to List (top_number)
+## Outputs: List of Hashtags 
+def make_pruned_hashtag_list(user_tweets, top_number, return_counts = True):
+  
   hashtags_list = []
 
+  ## Grouping Tweets by Author
   for author_id, group in user_tweets.groupby("author_id"):
+    
+    ## Limit to only include tweets with fewer than HASHTAG_COUNT_LIMIT 
     _filtered_hashtags = list(group["hashtags"])
     _filtered_hashtags = filter(lambda ht_l: len(ht_l) < HASHTAG_COUNT_LIMIT, _filtered_hashtags)
 
+    ## Limits to only a list of unique hashtags per user (only counts hashtags once per user)
     if UNIQUE_USER_HASHTAGS_COUNT:
       _hash_list = list(set([item for sublist in _filtered_hashtags for item in sublist]))
     else:
@@ -309,17 +384,26 @@ def make_pruned_hashtag_list(user_tweets, top_number, return_counts = False):
   if DEBUG:
     top_number = 5
 
-  # Finds the most common used hashtags (case sensitive) from the list.
+  ## Finds the most common used hashtags from the list.
   counts = collections.Counter(hashtags_list).most_common(top_number)
+  counts = sorted(counts, key = lambda x: x[1], reverse=True)
 
   if len(counts) == 0:
     raise ValueError("No hashtags found")
 
   if return_counts:
     return counts
+  else:
+    return [h for (h,_) in counts]
 
-  return [h for (h,_) in counts]
+########################################################
+########################################################
+########################################################
+########################################################
 
+## QUERY TWITTER FOR THE MOST USED HASHTAG FROM INPUTED LIST 
+## Inputs: List of hashtags, starting time, ending time
+## Outputs: Hashtag, Total Count, Hourly Count
 def all_twitter_top_counts(hashtags, start_time, end_time):
   # Get authentication information from the shell environment.
   bearer_token = os.environ.get('BEARER_TOKEN')
@@ -327,7 +411,7 @@ def all_twitter_top_counts(hashtags, start_time, end_time):
   # If environment variable isn't defined, a reminder pops up.
   assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
-  # Create .Client() object that will let us access the full archive.
+  # Create .Client() object that will let us access the full archive. Sent through Query Retry
   @retry_query
   def make_client():
     client = tweepy.Client(bearer_token = bearer_token,
@@ -337,7 +421,7 @@ def all_twitter_top_counts(hashtags, start_time, end_time):
 
   final_hashtagcount = []
 
-  # Queries Twitter to find the count of the tweets for each of the 5 hashtags identified over the past 7 days. 
+  # Queries Twitter to get the count (hourly and total) over the time period specified. 
   for _hashtag in hashtags:
     @retry_query
     def query_hashtag_counts():
@@ -354,6 +438,49 @@ def all_twitter_top_counts(hashtags, start_time, end_time):
   sorted_hashtag_count_final = sorted(final_hashtagcount, key = lambda kv:kv[1], reverse=True)
 
   return sorted_hashtag_count_final
+
+########################################################
+########################################################
+########################################################
+########################################################
+
+## QUERY TWITTER FOR WEEKLY TOTAL HASHTAG COUNT 
+## Inputs:
+## Outputs:
+def weekly_counts(hashtags, start_time, end_time):
+  
+  # Get authentication information from the shell environment.
+  bearer_token = os.environ.get('BEARER_TOKEN')
+
+  # If environment variable isn't defined, a reminder pops up.
+  assert bearer_token != None, "Remember to set API credentials as environment variables first!"
+
+  # Create .Client() object that will let us access the full archive. Sent through Query Retry
+  @retry_query
+  def make_client():
+    client = tweepy.Client(bearer_token = bearer_token,
+      return_type=dict)
+    return client
+  client = make_client()
+  
+  weekly_totals = []
+
+  for hashtag in hashtags:
+    count = client.get_all_tweets_count(query= "#" + hashtag,
+            granularity = 'day',
+            start_time= start_time,
+            end_time=end_time)
+    
+    hashtag_total = count['meta']['total_tweet_count']
+    weekly_totals.append([hashtag, hashtag_total])
+    weekly_total_df = pd.DataFrame(weekly_totals, columns = ['hashtag', 'weekly_total'])
+
+  return weekly_total_df
+
+########################################################
+########################################################
+########################################################
+########################################################
 
 def top_hashtags(hashtags_list, hashtag:str, end_time:datetime, write_to_file:bool = True, start_time = None):
   if start_time == None:
@@ -396,3 +523,8 @@ def top_hashtags(hashtags_list, hashtag:str, end_time:datetime, write_to_file:bo
   
   #return (df_all_twitter, df_sample)
   return (df_all_twitter, None)
+
+########################################################
+########################################################
+########################################################
+########################################################
