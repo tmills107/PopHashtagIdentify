@@ -137,7 +137,7 @@ def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or
   plt.xlabel("Time")
   plt.ylabel("Counts")
   fig = plt.gcf()
-  fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight')
+  fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight', dpi=500)
   plt.clf()
 
 ########################################################
@@ -356,9 +356,11 @@ def get_user_tweets(input_df, hashtag:str, end_time:datetime, write_to_file:bool
 
   tweets_dfs = pd.DataFrame(tweets_df)
 
+  tweet_length = len(tweets_dfs)
+
   # Save dfs to data/.
   if write_to_file:
-    tweets_dfs.to_csv(file_name_prefix + 'identified_user_tweets.csv', index=False)
+    tweets_dfs.to_csv(file_name_prefix + f'identified_user_tweets_{tweet_length}.csv', index=False)
   
   return tweets_dfs
 

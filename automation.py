@@ -38,10 +38,10 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
             start_time = end_time + timedelta(hours=-1)
             
             ## Step 1 (inital query of 100) | Output: df of 100 Tweet
-            df_ids = get_tweets_pagination(HASHTAG, end_time, write_to_file=True, start_time=start_time, limit=100, user_tweet_limit=50)
+            df_ids = get_tweets_pagination(HASHTAG, end_time, write_to_file=True, start_time=None, limit=100, user_tweet_limit=50)
             
             ## Step 2 (getting user ids and last 10 tweets per user) | Output: df of user tweets
-            df_user_tweets = get_user_tweets(df_ids, HASHTAG, end_time, write_to_file=True, start_time=start_time)
+            df_user_tweets = get_user_tweets(df_ids, HASHTAG, end_time, write_to_file=True, start_time=None)
             
             ## Step 3 (getting hashtags used in user tweets) | Output: TOP_NUMBER list of hashtags w/ counts 
             hashtags_list = make_pruned_hashtag_list(df_user_tweets, TOP_NUMBER, return_counts=True)
@@ -62,7 +62,7 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
         d = {x: 0 for x, _ in all_hashtag_list}
         for name, num in all_hashtag_list:
             d[name] += num
-        all_hashtag_list = list(map(tuple, d.items()))[0:5]
+        all_hashtag_list = list(map(tuple, d.items()))[0:PLOT_NUMBER]
         top_sample_list = list(zip(*all_hashtag_list))[0]
 
         ## Sets Count Collection Time to 8am-10pm for the Day of Query 
