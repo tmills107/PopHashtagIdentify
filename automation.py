@@ -102,7 +102,7 @@ def final(hashtag, end_time, limit=5000):
 ## INPUTS ##
 #################################################################
 #################################################################
-HASHTAG_LIST = ["amazon", "kyrie", "blacktwitter", "voteblue", "saveamerica", "lgbt", "lgbtq", "usa", "trump", "maga"] #["blacktwitter", "lgbtq", "bluewave", "trump"]  ## Input without # (added in querying functions)
+HASHTAG_LIST = ["blacktwitter", "lgbtq", "bluewave", "trump"] ## Input without # (added in querying functions)
 FINAL_RUN = True
 TOP_NUMBER = 10                                         ## Number of Hashtags Identified in User Tweets
 PLOT_NUMBER = 5                                         ## Number of Hashtags to be Plotted From Population Top Hashtag
