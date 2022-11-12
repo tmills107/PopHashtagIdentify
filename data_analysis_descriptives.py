@@ -7,7 +7,7 @@ import numpy as np
 
 YEAR = "2022"
 MONTH = "11"
-DAY = "01"
+DAY = "05"
 
 DATE_STRING = f"{YEAR}_{MONTH}_{DAY}"
 

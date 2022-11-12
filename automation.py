@@ -96,14 +96,14 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
         hashtag_analysis(population_df, HASHTAG, time_year, time_month, time_day, sample_or_population)
 
 ## Final Function to Pull 5000 Tweets (limit) from inputed Hashtag
-def final(hashtag, end_time,  limit=5000):
-    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=50)
+def final(hashtag, end_time, limit=5000):
+    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=None)
 
 ## INPUTS ##
 #################################################################
 #################################################################
-HASHTAG_LIST = ["blacktwitter", "lgbtq", "bluewave", "trump"]  ## Input without # (added in querying functions)
-FINAL_RUN = False
+HASHTAG_LIST = ["amazon", "kyrie", "blacktwitter", "voteblue", "saveamerica", "lgbt", "lgbtq", "usa", "trump", "maga"] #["blacktwitter", "lgbtq", "bluewave", "trump"]  ## Input without # (added in querying functions)
+FINAL_RUN = True
 TOP_NUMBER = 10                                         ## Number of Hashtags Identified in User Tweets
 PLOT_NUMBER = 5                                         ## Number of Hashtags to be Plotted From Population Top Hashtag
 time_year, time_month, time_day = (2022, 11, 5)         ## Year, Month, and Day to be Queried (must be within the past week) 

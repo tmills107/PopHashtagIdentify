@@ -218,7 +218,7 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     tweets = make_query_1()
 
     tweets_df = []
-    # Go through each tweet from each user and oragnize the data into coloumns for export. 
+    ## Go through each tweet from each user and oragnize the data into coloumns for export. 
     for item in tweets:
         if "entities" not in item:
             continue
@@ -254,9 +254,11 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
         groups.append(group)
       user_tweets_dfs = pd.concat(groups)
 
+    final_tweet_length = len(user_tweets_dfs)
+
     ## Writed to File 
     if write_to_file:
-        user_tweets_dfs.to_csv(file_name_prefix + 'tweets' + f"_{limit}" + '.csv', index=False)
+        user_tweets_dfs.to_csv(file_name_prefix + 'tweets' + f"_{limit}" + f"_{final_tweet_length}" + '.csv', index=False)
 
     ## Returns DataFrame of Tweets
     return user_tweets_dfs
