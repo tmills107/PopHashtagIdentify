@@ -21,7 +21,7 @@ for file in file_names:
         os.remove(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets/.DS_Store")
     except:
         pass
-    df = pd.read_csv(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets/{file}")
+    df = pd.read_csv(f"./data/{DATE_STRING}/{DATE_STRING}_final_tweets/{file}", lineterminator='\n')
 
     df = df.iloc[:,1:]
 
