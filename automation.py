@@ -97,7 +97,7 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
 
 ## Final Function to Pull 5000 Tweets (limit) from inputed Hashtag
 def final(hashtag, end_time, limit=5000):
-    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=None)
+    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=50)
 
 ## INPUTS ##
 #################################################################
