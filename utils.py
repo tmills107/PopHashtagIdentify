@@ -145,10 +145,10 @@ def hashtag_analysis(df_input:pd.DataFrame, hashtag, year, month, day, sample_or
 ########################################################
 ########################################################
 
-## GET TWEETS (PAGINATION)
+## GET TWEETS WITH HASHTAG INPUT (PAGINATION)
 ## Inputs: Hashtag, Time to Query = End Time (Collected in time reverse order), User Tweet Limit: Number of Tweets Collected Per User (limiting bots)
 ## Outputs: DataFrame of tweets (Written to file too)
-def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None, user_tweet_limit=None):
+def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = True, start_time = None, limit = None, user_tweet_limit=None, is_hashtag=None):
 
     if DEBUG:
         limit = 100
@@ -169,7 +169,10 @@ def get_tweets_pagination(hashtag: str, end_time:datetime, write_to_file:bool = 
     assert bearer_token != None, "Remember to set API credentials as environment variables first!"
 
     ## Sets the query as "#" + term inputed, exludes retweets and quote tweets, find tweets only in English
-    QUERY = f"#{HASHTAG} -is:retweet -is:quote -is:nullcast lang:en" 
+    if is_hashtag is True:
+        QUERY = f"#{HASHTAG} -is:retweet -is:quote -is:nullcast lang:en" 
+    else:
+        QUERY = f"{HASHTAG} -is:retweet -is:nullcast lang:en"
 
     @retry_query
     def make_query_1():
@@ -487,3 +490,230 @@ def weekly_counts(hashtags, start_time, end_time):
 
   return weekly_total_df
 
+########################################################
+########################################################
+########################################################
+########################################################
+
+## GENERAL QUERY 
+## Inputs:
+## Outputs:
+def geolocate_query(main_term:str, query:str, end_time:datetime, start_time:datetime, limit, write_to_file:bool = True, user_tweet_limit=None):
+
+    if DEBUG:
+        limit = 100
+
+    QUERY = query
+    date_string = make_timestring(end_time)
+    HOUR = end_time.hour
+
+    if DEBUG:
+        file_name_prefix = f"./data/debug_{main_term}_{query}_{date_string}_{HOUR}_"
+    else:
+        file_name_prefix = f"./data/{main_term}_{query}_{date_string}_{HOUR}_"
+
+    ## Get authentication information from the shell environment.
+    bearer_token = os.environ.get('BEARER_TOKEN')
+    
+    ## If environment variable isn't defined, a reminder pops up.
+    assert bearer_token != None, "Remember to set API credentials as environment variables first!"
+
+    ## Sets the query as term(s) inputed, exludes retweets and quote tweets, find tweets only in English
+    FULL_QUERY = f"{QUERY} -is:retweet -is:nullcast lang:en"
+
+    @retry_query
+    def make_query_1():
+        ##Creates Tweets DataFrame 
+        tweets = []
+        
+        ##Creates dictionary to place tweet authors followers count 
+        followers_count_dict = {}
+        username_dict = {}
+        
+        ## Create .Client() object that will let us access the full archive.
+        client = tweepy.Client(wait_on_rate_limit = True, 
+                            bearer_token = bearer_token)
+
+        ## Sets the number of pages the paginator will go through 
+        ## (Calculated by dividing total number of tweets desired by 100 (max number of results per page))
+        page_limit = int(limit/100)
+        if page_limit == 0:
+          raise ValueError("Limit too low")
+        
+        ## Builds Query for tweets including desired tweet/user/media fields and expansions
+        my_paginator = tweepy.Paginator(client.search_recent_tweets, 
+            query=FULL_QUERY,
+            tweet_fields=['created_at', 'entities', 'public_metrics'],
+            media_fields=['url'],
+            start_time=start_time,
+            end_time=end_time,
+            place_fields=['geo'],
+            user_fields=['username', 'description', 'public_metrics'],
+            expansions=['attachments.media_keys', 'author_id', 'geo.place_id'],
+            max_results = 100,
+            limit = page_limit)
+        
+        # Add Followers Count and Username to main data object
+        for page in my_paginator:
+          for u in page.includes["users"]:
+            followers_count_dict[u.id] = u.public_metrics["followers_count"]
+            username_dict[u.id] = u["username"]
+          for tweet in page.data:
+            tweet["data"]["follower_count"] = followers_count_dict[tweet["author_id"]]
+            tweet["data"]["username"] = username_dict[tweet["author_id"]]
+            tweets.append(tweet)
+
+        return tweets
+
+    ## Making Query
+    tweets = make_query_1()
+
+    tweets_df = []
+    ## Go through each tweet from each user and oragnize the data into coloumns for export. 
+    for item in tweets:
+        if "entities" not in item:
+            continue
+        if "hashtags" in item["entities"]:
+            hashtags = [d["tag"].lower() for d in item["entities"]["hashtags"]]
+        else:
+            hashtags = []
+
+        if item['geo'] is None:
+          geo = None
+        else:
+          geo = item['geo']
+
+        tweet_data = {
+                'tweet_id': item['id'],
+                'author_id': item['author_id'],
+                'username': item['data']['username'],
+                'follower_count': item['data']['follower_count'],
+                'text': item['text'],
+                'tweet_location': geo,
+                'hashtags': hashtags,
+                'created_at': item['created_at'],
+                'mined_at': datetime.now(),
+                'like_count': item['public_metrics']['like_count'],
+                'quote_count': item['public_metrics']['quote_count'],
+                'reply_count': item['public_metrics']['reply_count'],
+                'retweet_count': item['public_metrics']['retweet_count']
+        }     
+        tweets_df.append(tweet_data)
+
+    user_tweets_dfs = pd.DataFrame(tweets_df)
+
+    ## If data includes more than [user_tweet_limit tweets] per a single user it takes only the most recent [user_tweet_limit] from that user
+    if user_tweet_limit != None:
+      groups = []
+      for (_,group) in user_tweets_dfs.groupby("author_id"):
+        group.sort_values("created_at", inplace=True, ascending=False)
+        group = group.head(user_tweet_limit)
+        groups.append(group)
+      user_tweets_dfs = pd.concat(groups)
+
+    final_tweet_length = len(user_tweets_dfs)
+
+    ## Writed to File 
+    if write_to_file:
+        user_tweets_dfs.to_csv(file_name_prefix + 'tweets' + f"_{limit}" + f"_{final_tweet_length}" + '.csv', index=False)
+
+    ## Returns DataFrame of Tweets
+    return user_tweets_dfs
+
+########################################################
+########################################################
+########################################################
+########################################################
+
+## QUERY TWITTER FOR HOUR TOTAL HASHTAG COUNT 
+## Inputs:
+## Outputs:
+def hourly_counts(QUERY, start_time, end_time, year, month, day, is_hashtag=None):
+  
+  if DEBUG:
+        file_name_prefix = f"./data/debug_{QUERY}_{month}_{day}"
+  else:
+        file_name_prefix = f"./data/{QUERY}_{month}_{day}"
+
+  # Get authentication information from the shell environment.
+  bearer_token = os.environ.get('BEARER_TOKEN')
+
+  # If environment variable isn't defined, a reminder pops up.
+  assert bearer_token != None, "Remember to set API credentials as environment variables first!"
+
+  if is_hashtag is True:
+    FULL_QUERY = f"#{QUERY} -is:retweet -is:quote -is:nullcast lang:en"
+  else:
+    FULL_QUERY = f"{QUERY} -is:retweet -is:quote -is:nullcast lang:en"
+
+  # Create .Client() object that will let us access the full archive. Sent through Query Retry
+  @retry_query
+  def make_client():
+    client = tweepy.Client(bearer_token = bearer_token,
+      return_type=dict)
+    return client
+  client = make_client()
+
+  counts = client.get_all_tweets_count(query= FULL_QUERY,
+            granularity = 'hour',
+            start_time= start_time,
+            end_time=end_time)
+
+  counts_df=[]
+
+  for item in counts['data']:
+    _query = QUERY
+    _start_time = item['start']
+    _end_time = item['end']
+    count = item['tweet_count']
+    counts_df.append([_query, _start_time, _end_time, count])
+
+  hourly_counts_df = pd.DataFrame(counts_df, columns = ['query', 'start_time', 'end_time', 'count'])
+
+  return hourly_counts_df
+
+########################################################
+########################################################
+########################################################
+########################################################
+
+## COUNT ANALYSIS 
+## Inputs: DataFrame (columns are query, counts, start_time, and end_time)
+## Outputs: Line plot of hashtag count over time (Saved as png) 
+##          & Aggregate Data (Hourly Average and Daily Total) for each hashtag) (Saved as CSVs)
+def count_analysis(df_input:pd.DataFrame, main_term, year, month, day):
+  # df = fill_empty_counts(df_input)
+  df = df_input
+  
+  if DEBUG:
+        file_name_prefix = f"./data/debug_{main_term}_{month}_{day}"
+  else:
+        file_name_prefix = f"./data/{main_term}_{month}_{day}"
+  
+  df.to_csv(file_name_prefix + "_count_data.csv")
+
+  ## Aggregate Data
+
+  ## Hourly Average
+  hourly_average = df.groupby("query").mean()
+  hourly_average.sort_values('count', ascending=False).to_csv(f"{file_name_prefix}_hourly_average.csv")
+  
+  ## Daily Total
+  daily_total = df.groupby("query").sum()
+  daily_total.sort_values('count', ascending=False).to_csv(f"{file_name_prefix}_daily_total.csv")
+  
+  ## Make Plots
+  x_ticks = list(df["start_time"])
+  x_tick_labels = list(pd.DatetimeIndex(list(df["start_time"])).hour)
+
+  ax = sns.lineplot(data=df, hue="query", x="start_time", y="count", legend=True, markers="o")
+  ax.set_xticks(x_ticks)
+  ax.set_xticklabels(x_tick_labels)
+
+  sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+  plt.title(f"{main_term} Daily Trend {month}/{day}")
+  plt.xlabel("Time")
+  plt.ylabel("Counts")
+  fig = plt.gcf()
+  fig.savefig(f"{file_name_prefix}_plot.png", bbox_inches = 'tight', dpi=500)
+  plt.clf()
