@@ -15,8 +15,6 @@ from utils import (
     make_pruned_hashtag_list
 )
 
-PYTHON_EXEC = "/usr/local/bin/python3"
-
 DEBUG = bool(int(os.getenv("DEBUG_SCRIPT")))
 if DEBUG:
     print("Running script in DEBUG mode")
@@ -38,7 +36,7 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
             start_time = end_time + timedelta(hours=-1)
             
             ## Step 1 (inital query of 100) | Output: df of 100 Tweet
-            df_ids = get_tweets_pagination(HASHTAG, end_time, write_to_file=True, start_time=None, limit=100, user_tweet_limit=50)
+            df_ids = get_tweets_pagination(HASHTAG, end_time, write_to_file=True, start_time=None, limit=100, user_tweet_limit=50, is_hashtag=True)
             
             ## Step 2 (getting user ids and last 10 tweets per user) | Output: df of user tweets
             df_user_tweets = get_user_tweets(df_ids, HASHTAG, end_time, write_to_file=True, start_time=None)
@@ -97,7 +95,7 @@ def main_cycle(HASHTAG_LIST, hours_to_check, time_year, time_month, time_day, PL
 
 ## Final Function to Pull 5000 Tweets (limit) from inputed Hashtag
 def final(hashtag, end_time, limit=5000):
-    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=50)
+    return get_tweets_pagination(hashtag, end_time=end_time, write_to_file=True, start_time=None, limit=limit, user_tweet_limit=50, is_hashtag=True)
 
 ## INPUTS ##
 #################################################################
